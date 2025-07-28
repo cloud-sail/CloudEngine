@@ -35,6 +35,7 @@ struct StaticModelInfo
 	std::string m_yDirection = "left";
 	std::string m_zDirection = "up";
 	bool		m_frontCCW = true;
+	Vec3		m_translation = Vec3::ZERO;
 };
 
 Vec3 GetVec3FromString(std::string const& direction)
@@ -101,7 +102,7 @@ bool LoadOBJFromXML(std::vector<Vertex_PCUTBN>& out_verts, const char* modelXmlF
 	modelInfo.m_yDirection					= ParseXmlAttribute(*rootElement, "y", modelInfo.m_yDirection);
 	modelInfo.m_zDirection					= ParseXmlAttribute(*rootElement, "z", modelInfo.m_zDirection);
 	modelInfo.m_frontCCW					= ParseXmlAttribute(*rootElement, "frontCounterClockwise", modelInfo.m_frontCCW);
-
+	modelInfo.m_translation					= ParseXmlAttribute(*rootElement, "translation", modelInfo.m_translation);
 	// NOT USED Shader Name
 
 	std::string fileString;
@@ -118,6 +119,7 @@ bool LoadOBJFromXML(std::vector<Vertex_PCUTBN>& out_verts, const char* modelXmlF
 	Mat44 tbnTransform = rotTransform;
 	Mat44 posTransform = rotTransform;
 	posTransform.AppendScaleUniform3D(1.f / modelInfo.m_unitsPerMeter);
+	posTransform.SetTranslation3D(modelInfo.m_translation);
 
 	TransformVertexArray3D(out_verts, posTransform, true, false);
 	TransformVertexArray3D(out_verts, tbnTransform, false, true);

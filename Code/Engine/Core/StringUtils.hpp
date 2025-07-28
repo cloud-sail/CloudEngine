@@ -6,7 +6,9 @@
 //-----------------------------------------------------------------------------------------------
 const std::string Stringf( char const* format, ... );
 const std::string Stringf( int maxLength, char const* format, ... );
+const std::wstring WStringf(const wchar_t* format, ...);
 
+std::wstring ToWString(char const* c);
 //-----------------------------------------------------------------------------------------------
 typedef std::vector< std::string >		Strings;
 

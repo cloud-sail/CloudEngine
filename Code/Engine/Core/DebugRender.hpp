@@ -47,10 +47,17 @@ void DebugRenderScreen(Camera const& camera);
 void DebugRenderEndFrame();
 
 // Geometry
+void DebugAddWorldWirePenumbraNoneCull(Vec3 const& center, Vec3 const& fwdNormal, float radius, float penumbraDot,
+	float duration, Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
+	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+
 void DebugAddWorldSphere(Vec3 const& center, float radius, float duration,
 	Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
 	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 void DebugAddWorldWireSphere(Vec3 const& center, float radius, float duration,
+	Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
+	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+void DebugAddWorldWireSphereNoneCull(Vec3 const& center, float radius, float duration,
 	Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
 	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 void DebugAddWorldCylinder(Vec3 const& start, Vec3 const& end, float radius, float duration,

@@ -1,10 +1,39 @@
 #pragma once
+#include "Game/EngineBuildPreferences.hpp"
+
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
 #include "Engine/Core/Rgba8.hpp"
 
+#include <string>
+#include <vector>
+
+#if defined(ENGINE_RENDER_D3D11) && defined(ENGINE_RENDER_D3D12)
+#error "Using Multiple RHI"
+#endif
+
+//-----------------------------------------------------------------------------------------------
+// Forward Declarations - Engine
+//-----------------------------------------------------------------------------------------------
 class Window;
+class Texture;
+class BitmapFont;
+class Shader;
+class VertexBuffer;
+class IndexBuffer;
+class ConstantBuffer;
+class Image;
+class Camera;
+
+struct IntVec2;
+struct Rgba8;
+struct Vertex_PCU;
+struct Vertex_PCUTBN;
+struct ShaderConfig;
+
+
+
 
 //-----------------------------------------------------------------------------------------------
 // Renderer Config
@@ -13,6 +42,7 @@ struct RendererConfig
 {
 	Window* m_window = nullptr;
 };
+
 
 //-----------------------------------------------------------------------------------------------
 // Render States
@@ -57,12 +87,6 @@ enum class VertexType
 	COUNT
 };
 
-enum class InputLayoutMode
-{
-	VERTEX_PCU,
-	VERTEX_PCUTBN,
-	COUNT
-};
 
 // Constant Buffer has packing rules in HLSL
 // Pack into 4 byte boundaries
@@ -143,3 +167,67 @@ struct LightConstants
 };
 
 constexpr int k_lightConstantsSlot = 4;
+
+//-----------------------------------------------------------------------------------------------
+// Shader
+//-----------------------------------------------------------------------------------------------
+enum ShaderStage : unsigned int
+{
+	SHADER_STAGE_NONE = 0,
+	SHADER_STAGE_VS = 1 << 0,
+	SHADER_STAGE_PS = 1 << 1,
+	SHADER_STAGE_GS = 1 << 2,
+	SHADER_STAGE_HS = 1 << 3,
+	SHADER_STAGE_DS = 1 << 4,
+};
+
+enum ShaderCompilerType
+{
+	SHADER_COMPILER_D3DCOMPILE,
+	SHADER_COMPILER_DXC,
+};
+
+struct ShaderConfig
+{
+	ShaderConfig() = default;
+	ShaderConfig(char const* shaderName) : m_name(shaderName) {}
+
+	std::string m_name;
+	std::string m_vertexEntryPoint = "VertexMain";
+	std::string m_pixelEntryPoint = "PixelMain";
+	std::string m_geometryEntryPoint = "GeometryMain";
+	std::string m_hullEntryPoint = "HullMain";
+	std::string m_domainEntryPoint = "DomainMain";
+
+	ShaderStage m_stages = (ShaderStage)(SHADER_STAGE_VS | SHADER_STAGE_PS);
+	ShaderCompilerType m_compilerType = SHADER_COMPILER_DXC;
+
+	std::string m_shaderModelVS = "vs_6_6";
+	std::string m_shaderModelPS = "ps_6_6";
+	std::string m_shaderModelGS = "gs_6_6";
+	std::string m_shaderModelHS = "hs_6_6";
+	std::string m_shaderModelDS = "ds_6_6";
+};
+
+//-----------------------------------------------------------------------------------------------
+// Texture Cube
+//-----------------------------------------------------------------------------------------------
+struct TextureCubeSixFacesConfig
+{
+	std::string m_name;
+	std::string m_rightImageFilePath;
+	std::string m_leftImageFilePath;
+	std::string m_upImageFilePath;
+	std::string m_downImageFilePath;
+	std::string m_forwardImageFilePath;
+	std::string m_backwardImageFilePath;
+};
+
+//-----------------------------------------------------------------------------------------------
+// DX12 Renderer Settings
+//-----------------------------------------------------------------------------------------------
+constexpr unsigned int SWAP_CHAIN_BUFFER_COUNT = 2;
+constexpr unsigned int FRAMES_IN_FLIGHT = 2;
+constexpr size_t MAX_LINEAR_ALLOCATOR_SIZE = 64 * 1024 * 1024; // 64MB
+constexpr size_t MAX_MAIN_LINEAR_ALLOCATOR_SIZE = 64 * 1024 * 1024; // 64MB
+constexpr unsigned int IMGUI_SRV_HEAP_SIZE = 64;

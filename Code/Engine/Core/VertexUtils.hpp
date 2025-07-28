@@ -119,6 +119,7 @@ void AddVertsForArrow3D(std::vector<Vertex_PCU>& verts,
 
 void AddVertsForOBB3(std::vector<Vertex_PCU>& verts, OBB3 const& bounds, Rgba8 const& color, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
 
+void AddVertsForPenumbra3D(std::vector<Vertex_PCU>& verts, Vec3 const& position, Vec3 const& fwdNormal, float radius, float penumbraDot, Rgba8 const& color = Rgba8::OPAQUE_WHITE, int numSlices = 16);
 
 //-----------------------------------------------------------------------------------------------
 void AddVertsForGridXY(std::vector<Vertex_PCU>& verts, IntVec2 dimensions);

@@ -277,10 +277,20 @@ void DebugRenderEndFrame()
 	RemoveFinishedDebugRenderObjects(s_screenGeometry);
 	RemoveFinishedDebugRenderObjects(s_screenMessage);
 }
+
+
 #pragma endregion
 
 //-----------------------------------------------------------------------------------------------
 #pragma region Geometry
+void DebugAddWorldWirePenumbraNoneCull(Vec3 const& center, Vec3 const& fwdNormal, float radius, float penumbraDot, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
+{
+	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
+	DebugRenderObject& obj = s_worldGeometry.back();
+	AddVertsForPenumbra3D(obj.m_vertexs, center, fwdNormal, radius, penumbraDot);
+	obj.m_rasterizerMode = RasterizerMode::WIREFRAME_CULL_NONE;
+}
+
 void DebugAddWorldSphere(Vec3 const& center, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
@@ -294,6 +304,14 @@ void DebugAddWorldWireSphere(Vec3 const& center, float radius, float duration, R
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForSphere3D(obj.m_vertexs, center, radius);
 	obj.m_rasterizerMode = RasterizerMode::WIREFRAME_CULL_BACK;
+}
+
+void DebugAddWorldWireSphereNoneCull(Vec3 const& center, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
+{
+	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
+	DebugRenderObject& obj = s_worldGeometry.back();
+	AddVertsForSphere3D(obj.m_vertexs, center, radius);
+	obj.m_rasterizerMode = RasterizerMode::WIREFRAME_CULL_NONE;
 }
 
 void DebugAddWorldCylinder(Vec3 const& start, Vec3 const& end, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)

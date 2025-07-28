@@ -1,6 +1,6 @@
 #pragma once
 
-const char* g_defaultShaderSource = R"(
+inline const char* g_defaultShaderSource = R"(
 cbuffer CameraConstants: register(b2)
 {
 	float4x4 	WorldToCameraTransform;	// View transform

@@ -7,7 +7,14 @@
 #define WIN32_LEAN_AND_MEAN		// Always #define this before #including <windows.h>
 #include <windows.h>			// #include this (massive, platform-specific) header in VERY few places (and .CPPs only)
 
+#if defined(OPAQUE)
+#undef OPAQUE
+#endif
 
+#include "ThirdParty/imgui/imgui_impl_win32.h"
+
+
+#include "Engine/Renderer/Renderer.hpp"
 //-----------------------------------------------------------------------------------------------
 Window* Window::s_mainWindow = nullptr;
 
@@ -70,7 +77,7 @@ bool Window::IsFocused() const
 
 float Window::GetAspectRatio() const
 {
-	return m_config.m_aspectRatio;
+	return (float)m_clientDimensions.x / (float)m_clientDimensions.y;
 }
 
 WindowConfig const& Window::GetConfig() const
@@ -89,12 +96,25 @@ void* Window::GetDisplayContext() const
 
 LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessageCode, WPARAM wParam, LPARAM lParam)
 {
-	InputSystem* input = nullptr;
-	if (Window::s_mainWindow)
+	extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	if (ImGui_ImplWin32_WndProcHandler(windowHandle, wmMessageCode, wParam, lParam))
+		return true;
+
+	if (ImGui::GetCurrentContext() != nullptr && Window::s_mainWindow != nullptr)
 	{
+		ImGuiIO& io = ImGui::GetIO();
+
 		WindowConfig const& config = Window::s_mainWindow->GetConfig();
-		input = config.m_inputSystem;
+		bool blockKeyboard = config.m_imGuiCaptureKeyBoardInput && io.WantCaptureKeyboard;
+		bool blockMouse = config.m_imGuiCaptureMouseInput && io.WantCaptureMouse;
+
+		if ((blockKeyboard && (wmMessageCode >= WM_KEYFIRST && wmMessageCode <= WM_KEYLAST)) ||
+			(blockMouse && (wmMessageCode >= WM_MOUSEFIRST && wmMessageCode <= WM_MOUSELAST)))
+		{
+			return true;
+		}
 	}
+
 
 	switch (wmMessageCode)
 	{
@@ -129,34 +149,102 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 		}
 		case WM_LBUTTONDOWN:
 		{
-			if (input)
-			{
-				input->HandleKeyPressed(KEYCODE_LEFT_MOUSE);
-			}
+			EventArgs args;
+			args.SetValue("KeyCode", Stringf("%d", KEYCODE_LEFT_MOUSE));
+			FireEvent("KeyPressed", args);
 			return 0;
 		}
 		case WM_LBUTTONUP:
 		{
-			if (input)
-			{
-				input->HandleKeyReleased(KEYCODE_LEFT_MOUSE);
-			}
+			EventArgs args;
+			args.SetValue("KeyCode", Stringf("%d", KEYCODE_LEFT_MOUSE));
+			FireEvent("KeyReleased", args);
 			return 0;
 		}
 		case WM_RBUTTONDOWN:
 		{
-			if (input)
-			{
-				input->HandleKeyPressed(KEYCODE_RIGHT_MOUSE);
-			}
+			EventArgs args;
+			args.SetValue("KeyCode", Stringf("%d", KEYCODE_RIGHT_MOUSE));
+			FireEvent("KeyPressed", args);
 			return 0;
 		}
 		case WM_RBUTTONUP:
 		{
-			if (input)
+			EventArgs args;
+			args.SetValue("KeyCode", Stringf("%d", KEYCODE_RIGHT_MOUSE));
+			FireEvent("KeyReleased", args);
+			return 0;
+		}
+
+		case WM_SIZE:
+		{
+			if (Window::s_mainWindow)
 			{
-				input->HandleKeyReleased(KEYCODE_RIGHT_MOUSE);
+				Window* window = Window::s_mainWindow;
+				IntVec2 newDimensions = IntVec2(LOWORD(lParam), HIWORD(lParam));
+				window->UpdateClientDimensions(newDimensions);
+
+				if (wParam == SIZE_MINIMIZED)
+				{
+					window->m_isMinimized = true;
+					window->m_isMaximized = false;
+				}
+				else if (wParam == SIZE_MAXIMIZED)
+				{
+					window->m_isMinimized = false;
+					window->m_isMaximized = true;
+					if(Renderer::s_mainRenderer) Renderer::s_mainRenderer->OnResize();
+				}
+				else if (wParam == SIZE_RESTORED)
+				{
+
+					// Restoring from minimized state?
+					if (window->m_isMinimized)
+					{
+						window->m_isMinimized = false;
+						if (Renderer::s_mainRenderer) Renderer::s_mainRenderer->OnResize();
+					}
+
+					// Restoring from maximized state?
+					else if (window->m_isMaximized)
+					{
+						window->m_isMaximized = false;
+						if (Renderer::s_mainRenderer) Renderer::s_mainRenderer->OnResize();
+					}
+					else if (window->m_isResizing)
+					{
+						// If user is dragging the resize bars, we do not resize 
+						// the buffers here because as the user continuously 
+						// drags the resize bars, a stream of WM_SIZE messages are
+						// sent to the window, and it would be pointless (and slow)
+						// to resize for each WM_SIZE message received from dragging
+						// the resize bars.  So instead, we reset after the user is 
+						// done resizing the window and releases the resize bars, which 
+						// sends a WM_EXITSIZEMOVE message.
+					}
+					else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+					{
+						if (Renderer::s_mainRenderer) Renderer::s_mainRenderer->OnResize();
+					}
+				}
+
 			}
+			return 0;
+		}
+
+		// WM_EXITSIZEMOVE is sent when the user grabs the resize bars.
+		case WM_ENTERSIZEMOVE:
+		{
+			if (Window::s_mainWindow) Window::s_mainWindow->m_isResizing = true;
+			return 0;
+		}
+
+		// WM_EXITSIZEMOVE is sent when the user releases the resize bars.
+		// Here we reset everything based on the new window dimensions.
+		case WM_EXITSIZEMOVE:
+		{
+			if (Window::s_mainWindow) Window::s_mainWindow->m_isResizing = false;
+			if (Renderer::s_mainRenderer) Renderer::s_mainRenderer->OnResize();
 			return 0;
 		}
 	}
@@ -207,8 +295,8 @@ void Window::CreateOSWindow()
 	RegisterClassEx(&windowClassDescription);
 
 	// #SD1ToDo: Add support for fullscreen mode (requires different window style flags than windowed mode)
-	//DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_THICKFRAME | WS_SYSMENU | WS_OVERLAPPED;
-	DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_SYSMENU | WS_OVERLAPPED;
+	//DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER  | WS_SYSMENU | WS_OVERLAPPED;
+	DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_SYSMENU | WS_OVERLAPPED | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
 	DWORD const windowStyleExFlags = WS_EX_APPWINDOW;
 
 	// Get desktop rect, dimensions, aspect
@@ -277,4 +365,8 @@ void Window::CreateOSWindow()
 	SetCursor(cursor);
 }
 
+void Window::UpdateClientDimensions(IntVec2 newDimensions)
+{
+	m_clientDimensions = newDimensions;
+}
 

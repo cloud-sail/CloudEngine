@@ -89,6 +89,7 @@ struct Mat44
 	void Transpose(); // Swap columns with rows
 	void TransposeIJK(); // Only when it is a Rotation Matrix
 	void Orthonormalize_IFwd_JLeft_KUp(); // Forward is canonical, Up is secondary, Left is tertiary
+	void Inverse();
 
 	void Append(Mat44 const& appendThis); 
 	void AppendZRotation(float degreesRotationAboutZ);

@@ -32,7 +32,7 @@ public:
 	IntVec2			GetValue(std::string const& keyName, IntVec2 const& defaultValue) const;
 
 
-private:
+public:
 	std::map<std::string, std::string> m_keyValuePairs;
 };
 

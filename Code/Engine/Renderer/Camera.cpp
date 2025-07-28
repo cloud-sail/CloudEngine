@@ -1,5 +1,7 @@
 #include "Engine/Renderer/Camera.hpp"
+#include "Engine/Core/EngineCommon.hpp"
 #include "Engine/Math/Vec4.hpp"
+#include "Engine/Math/MathUtils.hpp"
 #include "Engine/Window/Window.hpp"
 
 
@@ -193,6 +195,34 @@ bool Camera::ProjectWorldToViewportPoint(Vec3 const& worldPos, Vec2& out_viewpor
 	Vec2 ndcSpacePosition = Vec2(clipSpacePosition.x * invW, clipSpacePosition.y * invW);
 	
 	out_viewportPos = Vec2(ndcSpacePosition.x * 0.5f + 0.5f, ndcSpacePosition.y * 0.5f + 0.5f);
+	return true;
+}
+
+
+bool Camera::ScreenPointToRay(Vec3& out_rayStart, Vec3& out_rayFwdNormal, Vec2 const& clientUV) const
+{
+	GUARANTEE_OR_DIE(m_mode == eMode_Perspective, "The camera mode is not perspective.");
+	if (!m_normalizedViewport.IsPointInside(clientUV))
+	{
+		return false; // invalid ray
+	}
+
+	Vec2 viewportUV = m_normalizedViewport.GetUVForPoint(clientUV);
+	Vec2 viewportNormalizedCoordinate = Vec2(2.f * viewportUV.x - 1.f, 2.f * viewportUV.y - 1.f);
+
+	float tanHalfFov = TanDegrees(0.5f * m_perspectiveFOV);
+	
+	Vec3 localPoint;
+	localPoint.x = 1.f;
+	localPoint.y = tanHalfFov * m_perspectiveAspect * -viewportNormalizedCoordinate.x;
+	localPoint.z = tanHalfFov * viewportNormalizedCoordinate.y;
+
+	Mat44 rot = m_orientation.GetAsMatrix_IFwd_JLeft_KUp();
+
+	Vec3 direction = rot.TransformVectorQuantity3D(localPoint);
+
+	out_rayStart = m_position;
+	out_rayFwdNormal = direction.GetNormalized();
 	return true;
 }
 

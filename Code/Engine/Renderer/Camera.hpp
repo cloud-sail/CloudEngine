@@ -6,6 +6,8 @@
 #include "Engine/Math/EulerAngles.hpp"
 
 
+class Ray3;
+
 class Camera
 {
 public:
@@ -49,6 +51,8 @@ public:
 
 	bool ProjectWorldToScreenPoint(Vec3 const& worldPos, Vec2& out_screenPos) const;
 	bool ProjectWorldToViewportPoint(Vec3 const& worldPos, Vec2& out_viewportPos) const;
+
+	bool ScreenPointToRay(Vec3& out_rayStart, Vec3& out_rayFwdNormal, Vec2 const& clientUV) const;
 
 	// Alias Function
 	void SetOrthoView(Vec2 const& bottomLeft, Vec2 const& topRight);

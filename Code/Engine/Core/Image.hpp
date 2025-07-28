@@ -14,7 +14,7 @@ class Image
 public:
 	Image();
 	~Image();
-	Image(char const* imageFilePath);
+	Image(char const* imageFilePath, bool flipVertically = true);
 	Image(IntVec2 size, Rgba8 color, char const* imageFilePath = "UNKNOWN");
 
 

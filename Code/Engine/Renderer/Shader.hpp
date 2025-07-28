@@ -1,5 +1,7 @@
 #pragma once
+#include "Engine/Renderer/RendererCommon.hpp"
 #include <string>
+#include <vector>
 
 //-----------------------------------------------------------------------------------------------
 struct ID3D11VertexShader;
@@ -8,21 +10,19 @@ struct ID3D11GeometryShader;
 struct ID3D11InputLayout;
 
 
-#include <d3dcommon.h>
+/*
+	Graphics,   // VS, PS, (GS, HS, DS)
+	Compute,    // CS
+	Mesh        // MS, AS, PS
+*/
 
-//-----------------------------------------------------------------------------------------------
-struct ShaderConfig
-{
-	std::string m_name;
-	std::string m_vertexEntryPoint = "VertexMain";
-	std::string m_pixelEntryPoint = "PixelMain";
-	std::string m_geometryEntryPoint = "GeometryMain";
-	// May be store shader target name here
-};
+
 
 class Shader
 {
 	friend class Renderer;
+	friend class DX11Renderer;
+	friend class DX12Renderer;
 	friend class GraphicsPSO;
 
 public:
@@ -35,15 +35,23 @@ public:
 private:
 	ShaderConfig m_config;
 	
-	// DX11
+#ifdef ENGINE_RENDER_D3D11
 	ID3D11VertexShader* m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11GeometryShader* m_geometryShader = nullptr;
 	ID3D11InputLayout* m_inputLayout = nullptr;
+#endif // ENGINE_RENDER_D3D11
 
-	// DX12
-	ID3DBlob* m_VS = nullptr;
-	ID3DBlob* m_PS = nullptr;
+#ifdef ENGINE_RENDER_D3D12
+	std::vector<unsigned char> m_vertexShaderByteCode;
+	std::vector<unsigned char> m_pixelShaderByteCode;
+	std::vector<unsigned char> m_geometryShaderByteCode;
+	std::vector<unsigned char> m_hullShaderByteCode;
+	std::vector<unsigned char> m_domainShaderByteCode;
+
+	VertexType m_inputLayoutMode = VertexType::VERTEX_PCU;
+#endif // ENGINE_RENDER_D3D12
+
 
 };
 

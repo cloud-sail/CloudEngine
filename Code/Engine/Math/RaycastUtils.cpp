@@ -26,6 +26,7 @@ Ray2::Ray2(Vec2 const& startPos, Vec2 const& fwdNormal, float maxLength)
 {
 }
 
+
 //-----------------------------------------------------------------------------------------------
 RaycastResult2D RaycastVsDisc2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, Vec2 const& discCenter, float discRadius)
 {

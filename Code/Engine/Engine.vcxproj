@@ -167,6 +167,14 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ThirdParty\imgui\imgui.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_impl_dx11.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
     <ClCompile Include="..\ThirdParty\TinyXML2\tinyxml2.cpp" />
     <ClCompile Include="Audio\AudioSystem.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
@@ -215,8 +223,14 @@
     <ClCompile Include="Math\Vec2.cpp" />
     <ClCompile Include="Math\Vec3.cpp" />
     <ClCompile Include="Math\Vec4.cpp" />
+    <ClCompile Include="Network\NetworkSystem.cpp" />
+    <ClCompile Include="Renderer\DX11Renderer.cpp" />
+    <ClCompile Include="Renderer\DX12DeferredReleaseQueue.cpp" />
+    <ClCompile Include="Renderer\DX12DescriptorHeap.cpp" />
+    <ClCompile Include="Renderer\DX12LinearAllocator.cpp" />
     <ClCompile Include="Renderer\DX12PipelineState.cpp" />
     <ClCompile Include="Renderer\DX12Renderer.cpp" />
+    <ClCompile Include="Renderer\DX12GraphicsCommon.cpp" />
     <ClCompile Include="Renderer\Skybox.cpp" />
     <ClCompile Include="Renderer\BitmapFont.cpp" />
     <ClCompile Include="Renderer\Camera.cpp" />
@@ -234,6 +248,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ThirdParty\directx\d3dx12.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imconfig.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_impl_dx11.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_impl_win32.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imgui_internal.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
     <ClInclude Include="..\ThirdParty\TinyXML2\tinyxml2.h" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="Core\DebugRender.hpp" />
@@ -241,6 +264,9 @@
     <ClInclude Include="Core\StaticMeshUtils.hpp" />
     <ClInclude Include="Core\Timer.hpp" />
     <ClInclude Include="Core\Vertex_PCUTBN.hpp" />
+    <ClInclude Include="Network\NetworkSystem.hpp" />
+    <ClInclude Include="Renderer\DX11Renderer.hpp" />
+    <ClInclude Include="Renderer\DX12DeferredReleaseQueue.hpp" />
     <ClInclude Include="Math\AABB3.hpp" />
     <ClInclude Include="Audio\AudioSystem.hpp" />
     <ClInclude Include="Core\DevConsole.hpp" />
@@ -283,9 +309,12 @@
     <ClInclude Include="Math\Vec2.hpp" />
     <ClInclude Include="Math\Vec3.hpp" />
     <ClInclude Include="Math\Vec4.hpp" />
+    <ClInclude Include="Renderer\DX12DescriptorHeap.hpp" />
+    <ClInclude Include="Renderer\DX12LinearAllocator.hpp" />
     <ClInclude Include="Renderer\DX12PipelineState.hpp" />
     <ClInclude Include="Renderer\DX12Renderer.hpp" />
     <ClInclude Include="Renderer\RendererCommon.hpp" />
+    <ClInclude Include="Renderer\DX12GraphicsCommon.hpp" />
     <ClInclude Include="Renderer\Skybox.hpp" />
     <ClInclude Include="Renderer\BitmapFont.hpp" />
     <ClInclude Include="Renderer\Camera.hpp" />

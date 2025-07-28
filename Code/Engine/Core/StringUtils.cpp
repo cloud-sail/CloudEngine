@@ -19,6 +19,23 @@ const std::string Stringf( char const* format, ... )
 	return std::string( textLiteral );
 }
 
+const std::wstring WStringf(const wchar_t* format, ...)
+{
+	wchar_t textLiteral[STRINGF_STACK_LOCAL_TEMP_LENGTH];
+	va_list variableArgumentList;
+	va_start(variableArgumentList, format);
+	_vsnwprintf_s(textLiteral, STRINGF_STACK_LOCAL_TEMP_LENGTH, _TRUNCATE, format, variableArgumentList);
+	va_end(variableArgumentList);
+	textLiteral[STRINGF_STACK_LOCAL_TEMP_LENGTH - 1] = L'\0';
+
+	return std::wstring(textLiteral);
+}
+
+std::wstring ToWString(char const* c)
+{
+	std::string s{ c };
+	return { s.begin(), s.end() };
+}
 
 //-----------------------------------------------------------------------------------------------
 const std::string Stringf( int maxLength, char const* format, ... )

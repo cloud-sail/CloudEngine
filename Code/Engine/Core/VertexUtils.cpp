@@ -1042,6 +1042,38 @@ void AddVertsForOBB3(std::vector<Vertex_PCU>& verts, OBB3 const& bounds, Rgba8 c
 	}
 }
 
+
+void AddVertsForPenumbra3D(std::vector<Vertex_PCU>& verts, Vec3 const& position, Vec3 const& fwdNormal, float radius, float penumbraDot, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, int numSlices /*= 16*/)
+{
+	float const DEGREES_PER_SLICE = 360.f / static_cast<float>(numSlices);
+
+	float cosHalfAperture = GetClamped(penumbraDot, -1.f, 1.f);
+	float coneRadius = radius * sqrtf(GetClampedZeroToOne(1.f - cosHalfAperture * cosHalfAperture));
+
+	Vec3 start = position;
+	Vec3 end = start + fwdNormal * radius * cosHalfAperture;
+
+	Mat44 localSpace = Mat44::MakeFromX(end - start);
+	Vec3 jBasis = localSpace.GetJBasis3D();
+	Vec3 kBasis = localSpace.GetKBasis3D();
+
+	for (int i = 0; i < numSlices; ++i)
+	{
+		float firstDegrees = i * DEGREES_PER_SLICE;
+		float secondDegrees = (i + 1) * DEGREES_PER_SLICE;
+
+		Vec3 firstOffset = jBasis * coneRadius * CosDegrees(firstDegrees) + kBasis * coneRadius * SinDegrees(firstDegrees);
+		Vec3 secondOffset = jBasis * coneRadius * CosDegrees(secondDegrees) + kBasis * coneRadius * SinDegrees(secondDegrees);
+
+		Vec3 BL = end + firstOffset;
+		Vec3 BR = end + secondOffset;
+
+		verts.push_back(Vertex_PCU(start, color, Vec2::ZERO));
+		verts.push_back(Vertex_PCU(BL, color, Vec2::ZERO));
+		verts.push_back(Vertex_PCU(BR, color, Vec2::ZERO));
+	}
+}
+
 //-----------------------------------------------------------------------------------------------
 void AddVertsForGridXY(std::vector<Vertex_PCU>& verts, IntVec2 dimensions)
 {
