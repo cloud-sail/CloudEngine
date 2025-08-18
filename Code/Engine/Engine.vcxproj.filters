@@ -271,6 +271,9 @@
     <ClCompile Include="Renderer\DX12DescriptorHeap.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer\Buffer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Math\Vec2.hpp">
@@ -520,6 +523,9 @@
       <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\DX12DescriptorHeap.hpp">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Buffer.hpp">
       <Filter>Renderer</Filter>
     </ClInclude>
   </ItemGroup>

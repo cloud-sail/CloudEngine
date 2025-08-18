@@ -28,6 +28,7 @@ enum class MsgSeverityLevel
 
 //-----------------------------------------------------------------------------------------------
 void DebuggerPrintf( char const* messageFormat, ... );
+void DebuggerWPrintf(wchar_t const* messageFormat, ...);
 bool IsDebuggerAvailable();
 __declspec( noreturn ) void FatalError( char const* filePath, char const* functionName, int lineNum, std::string const& reasonForError, char const* conditionText=nullptr );
 void RecoverableWarning( char const* filePath, char const* functionName, int lineNum, std::string const& reasonForWarning, char const* conditionText=nullptr );

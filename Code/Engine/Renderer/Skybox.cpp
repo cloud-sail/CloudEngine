@@ -5,6 +5,7 @@
 #include "Engine/Renderer/Renderer.hpp"
 #include "Engine/Renderer/SpriteSheet.hpp"
 #include "Engine/Math/IntVec2.hpp"
+#include "Game/EngineBuildPreferences.hpp"
 
 Skybox::Skybox(SkyboxConfig const& config)
 	: m_config(config)
@@ -52,12 +53,30 @@ void Skybox::Render(Camera const& camera, Renderer* rendererOverride /*= nullptr
 		Mat44 skyBoxMat44;
 		skyBoxMat44.SetTranslation3D(camera.GetPosition());
 		renderer->SetModelConstants(skyBoxMat44);
+
+#ifdef ENGINE_RENDER_D3D11
 		renderer->BindTexture(m_texture);
+		renderer->SetSamplerMode(SamplerMode::BILINEAR_WRAP);
+#endif // ENGINE_RENDER_D3D11
+
+#ifdef ENGINE_RENDER_D3D12
+		// resource settings
+		UnlitRenderResources resources;
+		resources.diffuseTextureIndex = renderer->GetSrvIndexFromLoadedTexture(m_texture);
+		resources.diffuseSamplerIndex = renderer->GetDefaultSamplerIndex(SamplerMode::BILINEAR_WRAP);
+		resources.cameraConstantsIndex = renderer->GetCurrentCameraConstantsIndex();
+		resources.modelConstantsIndex = renderer->GetCurrentModelConstantsIndex();
+
+		renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
+#endif // ENGINE_RENDER_D3D12
+
+		// pipeline settings 
 		renderer->BindShader(nullptr);
 		renderer->SetBlendMode(BlendMode::OPAQUE);
-		renderer->SetSamplerMode(SamplerMode::BILINEAR_WRAP);
 		renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_BACK);
 		renderer->SetDepthMode(DepthMode::DISABLED);
+		renderer->SetRenderTargetFormats();
+
 		renderer->DrawVertexArray(m_unlitVertexs);
 	}
 }

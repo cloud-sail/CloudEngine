@@ -122,6 +122,18 @@ Mat44 Camera::GetProjectionMatrix() const
 	return Mat44();
 }
 
+Mat44 Camera::GetClipToWorldTransform() const
+{
+	Mat44 result;
+	// Get World To Clip
+	result.Append(GetRenderToClipTransform());
+	result.Append(GetCameraToRenderTransform());
+	result.Append(GetWorldToCameraTransform());
+	// Inverse: clip to world
+	result.Inverse();
+	return result;
+}
+
 bool Camera::IsMode(Mode mode) const
 {
 	return m_mode == mode;

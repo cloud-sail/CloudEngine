@@ -76,6 +76,11 @@ public:
 	void SetRasterizerMode(RasterizerMode rasterizerMode) override;
 	void SetDepthMode(DepthMode depthMode) override;
 
+	void SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& rtvFormats = { DXGI_FORMAT_R8G8B8A8_UNORM },
+		DXGI_FORMAT dsvFormat = DXGI_FORMAT_D24_UNORM_S8_UINT,
+		unsigned int msaaCount = 1,
+		unsigned int msaaQuality = 0) override;
+
 	void SetEngineConstants(int debugInt = 0, float debugFloat = 0.f) override;
 	void SetModelConstants(Mat44 const& modelToWorldTransform = Mat44(), Rgba8 const& modelColor = Rgba8::OPAQUE_WHITE) override;
 	void SetLightConstants(Vec3 const& sunDirection = Vec3(2.f, -1.f, -1.f), float sunIntensity = 0.85f, float ambientIntensity = 0.35f) override;

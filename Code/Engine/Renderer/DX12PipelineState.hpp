@@ -30,7 +30,7 @@ public:
 	ID3D12PipelineState* GetPipelineStateObject() const { return m_PSO; }
 
 protected:
-	const wchar_t* m_name; // debug
+	std::wstring m_name; // debug
 	ID3D12PipelineState* m_PSO = nullptr;
 
 	ID3D12RootSignature* m_rootSignature = nullptr;
@@ -48,10 +48,10 @@ public:
 	void SetBlendMode(BlendMode blendMode);
 	void SetRasterizerMode(RasterizerMode rasterizerMode);
 	void SetDepthMode(DepthMode depthMode);
-	//void SetInputLayout(VertexType inputLayoutMode);
+	//void SetInputLayout(VertexType inputLayoutMode); // In Shader now
 	void SetShader(Shader* shader);
-	// Not hashed Not used // for deferred rendering render 3 G-Buffer
-	void SetRenderTargetFormats(UINT numRTVs, DXGI_FORMAT* rtvFormats, DXGI_FORMAT dsvFormat, UINT msaaCount = 1, UINT msaaQuality = 0);
+	// for deferred rendering render 3 G-Buffer
+	void SetRenderTargetFormats(UINT numRTVs, DXGI_FORMAT const* rtvFormats, DXGI_FORMAT dsvFormat, UINT msaaCount = 1, UINT msaaQuality = 0);
 
 	void Finalize();
 
@@ -68,5 +68,24 @@ private:
 	RasterizerMode  m_rasterizerMode = RasterizerMode::SOLID_CULL_BACK;
 	DepthMode       m_depthMode = DepthMode::READ_WRITE_LESS_EQUAL;
 };
+
+class ComputePSO : public PSO
+{
+public:
+	ComputePSO(const wchar_t* name = L"Unnamed Compute PSO");
+
+	void SetShader(Shader* shader);
+
+	void Finalize();
+
+private:
+	size_t GetHashKey() const;
+
+	D3D12_COMPUTE_PIPELINE_STATE_DESC m_PSODesc = {};
+
+	// Hash
+	std::string		m_shaderName;
+};
+
 
 #endif // ENGINE_RENDER_D3D12

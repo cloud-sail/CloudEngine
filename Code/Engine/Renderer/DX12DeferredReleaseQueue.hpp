@@ -6,11 +6,40 @@
 #include <cstdint>
 
 struct IUnknown;
+class DX12DescriptorHeap;
+
+
+enum class DeferredReleaseType
+{
+	Resource,
+	Descriptor
+};
+
 
 struct DeferredReleaseItem
 {
 	uint64_t fenceValue;
-	IUnknown* resource;
+	DeferredReleaseType type = DeferredReleaseType::Resource;
+
+	// Resource
+	IUnknown* resource = nullptr;
+
+	// Descriptor
+	DX12DescriptorHeap* heap = nullptr;
+	uint32_t index = uint32_t(-1);
+
+	DeferredReleaseItem(uint64_t f, IUnknown* res)
+		: fenceValue(f)
+		, type(DeferredReleaseType::Resource)
+		, resource(res) 
+	{}
+
+	DeferredReleaseItem(uint64_t f, DX12DescriptorHeap* h, uint32_t idx)
+		: fenceValue(f)
+		, type(DeferredReleaseType::Descriptor)
+		, heap(h)
+		, index(idx)
+	{}
 };
 
 class DX12DeferredReleaseQueue
@@ -22,8 +51,10 @@ public:
 	DX12DeferredReleaseQueue(const DX12DeferredReleaseQueue&) = delete;
 	DX12DeferredReleaseQueue& operator=(const DX12DeferredReleaseQueue&) = delete;
 
-	void Enqueue(uint64_t fenceValue, IUnknown* resource);
+	void EnqueueResource(uint64_t fenceValue, IUnknown* resource);
+	void EnqueueDescriptor(uint64_t fenceValue, DX12DescriptorHeap* heap, uint32_t index);
 	void Process(uint64_t completedFenceValue);
+
 
 
 private:

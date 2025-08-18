@@ -37,6 +37,11 @@ std::wstring ToWString(char const* c)
 	return { s.begin(), s.end() };
 }
 
+std::wstring ToWString(std::string const& s)
+{
+	return { s.begin(), s.end() };
+}
+
 //-----------------------------------------------------------------------------------------------
 const std::string Stringf( int maxLength, char const* format, ... )
 {

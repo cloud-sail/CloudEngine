@@ -24,13 +24,16 @@ class Shader
 	friend class DX11Renderer;
 	friend class DX12Renderer;
 	friend class GraphicsPSO;
+	friend class ComputePSO;
 
 public:
+	const std::string& GetName() const;
+
+private:
 	Shader(const ShaderConfig& config);
 	Shader(const Shader& copy) = delete;
 	~Shader();
 
-	const std::string& GetName() const;
 
 private:
 	ShaderConfig m_config;
@@ -48,6 +51,8 @@ private:
 	std::vector<unsigned char> m_geometryShaderByteCode;
 	std::vector<unsigned char> m_hullShaderByteCode;
 	std::vector<unsigned char> m_domainShaderByteCode;
+
+	std::vector<unsigned char> m_computeShaderByteCode;
 
 	VertexType m_inputLayoutMode = VertexType::VERTEX_PCU;
 #endif // ENGINE_RENDER_D3D12

@@ -62,6 +62,103 @@ const CD3DX12_STATIC_SAMPLER_DESC g_staticSamplers[] =
 
 const size_t g_numStaticSamplers = sizeof(g_staticSamplers) / sizeof(CD3DX12_STATIC_SAMPLER_DESC);
 
+uint32_t DXGI_FORMAT_GetStride(DXGI_FORMAT format)
+{
+	switch (format)
+	{
+	// 8-bit formats
+	case DXGI_FORMAT_R8_UNORM:            return 1;
+	case DXGI_FORMAT_R8_SNORM:            return 1;
+	case DXGI_FORMAT_R8_UINT:             return 1;
+	case DXGI_FORMAT_R8_SINT:             return 1;
+	case DXGI_FORMAT_A8_UNORM:            return 1;
+
+	// 16-bit formats
+	case DXGI_FORMAT_R16_FLOAT:           return 2;
+	case DXGI_FORMAT_R16_UNORM:           return 2;
+	case DXGI_FORMAT_R16_SNORM:           return 2;
+	case DXGI_FORMAT_R16_UINT:            return 2;
+	case DXGI_FORMAT_R16_SINT:            return 2;
+	case DXGI_FORMAT_R8G8_UNORM:          return 2;
+	case DXGI_FORMAT_R8G8_SNORM:          return 2;
+	case DXGI_FORMAT_R8G8_UINT:           return 2;
+	case DXGI_FORMAT_R8G8_SINT:           return 2;
+
+	// 24-bit formats
+	case DXGI_FORMAT_R8G8B8A8_UNORM:      return 4;
+	case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB: return 4;
+	case DXGI_FORMAT_R8G8B8A8_SNORM:      return 4;
+	case DXGI_FORMAT_R8G8B8A8_UINT:       return 4;
+	case DXGI_FORMAT_R8G8B8A8_SINT:       return 4;
+	case DXGI_FORMAT_B8G8R8A8_UNORM:      return 4;
+	case DXGI_FORMAT_B8G8R8X8_UNORM:      return 4;
+
+	// 16-bit/channel (32-bit, 48-bit, 64-bit)
+	case DXGI_FORMAT_R16G16_FLOAT:        return 4;
+	case DXGI_FORMAT_R16G16_UNORM:        return 4;
+	case DXGI_FORMAT_R16G16_SNORM:        return 4;
+	case DXGI_FORMAT_R16G16_UINT:         return 4;
+	case DXGI_FORMAT_R16G16_SINT:         return 4;
+	case DXGI_FORMAT_R16G16B16A16_FLOAT:  return 8;
+	case DXGI_FORMAT_R16G16B16A16_UNORM:  return 8;
+	case DXGI_FORMAT_R16G16B16A16_SNORM:  return 8;
+	case DXGI_FORMAT_R16G16B16A16_UINT:   return 8;
+	case DXGI_FORMAT_R16G16B16A16_SINT:   return 8;
+
+	// 32-bit/channel
+	case DXGI_FORMAT_R32_FLOAT:           return 4;
+	case DXGI_FORMAT_R32_UINT:            return 4;
+	case DXGI_FORMAT_R32_SINT:            return 4;
+	case DXGI_FORMAT_R32G32_FLOAT:        return 8;
+	case DXGI_FORMAT_R32G32_UINT:         return 8;
+	case DXGI_FORMAT_R32G32_SINT:         return 8;
+	case DXGI_FORMAT_R32G32B32_FLOAT:     return 12;
+	case DXGI_FORMAT_R32G32B32_UINT:      return 12;
+	case DXGI_FORMAT_R32G32B32_SINT:      return 12;
+	case DXGI_FORMAT_R32G32B32A32_FLOAT:  return 16;
+	case DXGI_FORMAT_R32G32B32A32_UINT:   return 16;
+	case DXGI_FORMAT_R32G32B32A32_SINT:   return 16;
+
+	// Packed formats
+	case DXGI_FORMAT_R10G10B10A2_UNORM:   return 4;
+	case DXGI_FORMAT_R10G10B10A2_UINT:    return 4;
+	case DXGI_FORMAT_R11G11B10_FLOAT:     return 4;
+
+	// Depth-stencil formats
+	case DXGI_FORMAT_D16_UNORM:           return 2;
+	case DXGI_FORMAT_D24_UNORM_S8_UINT:   return 4;
+	case DXGI_FORMAT_D32_FLOAT:           return 4;
+	case DXGI_FORMAT_D32_FLOAT_S8X24_UINT:return 8;
+	default: return 0;
+	}
+}
+
+D3D12_RESOURCE_DIMENSION ToDX12Dimension(DXResourceDimension dimension)
+{
+	switch (dimension)
+	{
+	case DXResourceDimension::BUFFER:		return D3D12_RESOURCE_DIMENSION_BUFFER;
+	case DXResourceDimension::TEXTURE1D:	return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+	case DXResourceDimension::TEXTURE2D:	return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	case DXResourceDimension::TEXTURE3D:	return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+	default:								return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+	}
+}
+
+//D3D12_RESOURCE_FLAGS ToDX12Flags(DXResourceFlags flags)
+//{
+//	D3D12_RESOURCE_FLAGS dxFlags = D3D12_RESOURCE_FLAG_NONE;
+//	if (flags & DXRF_RENDER_TARGET)
+//		dxFlags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
+//	if (flags & DXRF_DEPTH_STENCIL)
+//		dxFlags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+//	if (flags & DXRF_UNORDERED_ACCESS)
+//		dxFlags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+//	if (flags & DXRF_DENY_SHADER_RESOURCE)
+//		dxFlags |= D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE;
+//	return dxFlags;
+//}
+
 namespace DX12Graphics
 {
 	//-----------------------------------------------------------------------------------------------

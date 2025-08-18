@@ -915,6 +915,14 @@ void DX11Renderer::SetDepthMode(DepthMode depthMode)
 	m_desiredDepthMode = depthMode;
 }
 
+void DX11Renderer::SetRenderTargetFormats(const std::vector<DXGI_FORMAT>& rtvFormats /*= { DXGI_FORMAT_R8G8B8A8_UNORM }*/, DXGI_FORMAT dsvFormat /*= DXGI_FORMAT_D24_UNORM_S8_UINT*/, unsigned int msaaCount /*= 1*/, unsigned int msaaQuality /*= 0*/)
+{
+	UNUSED(rtvFormats);
+	UNUSED(dsvFormat);
+	UNUSED(msaaCount);
+	UNUSED(msaaQuality);
+}
+
 void DX11Renderer::SetEngineConstants(int debugInt /*= 0*/, float debugFloat /*= 0.f*/)
 {
 	EngineConstants engineConstants;

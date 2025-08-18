@@ -44,6 +44,8 @@ public:
 	Mat44 GetPerspectiveMatrix() const;
 	Mat44 GetProjectionMatrix() const;
 
+	Mat44 GetClipToWorldTransform() const;
+
 	bool IsMode(Mode mode) const;
 
 	void SetNormalizedViewPort(AABB2 normalizedViewPort);

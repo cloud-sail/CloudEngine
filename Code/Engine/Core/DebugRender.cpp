@@ -87,22 +87,44 @@ namespace
 		{
 			color = Interpolate(m_startColor, m_endColor, GetClampedZeroToOne((float)m_timer.GetElapsedFraction()));
 		}
-		s_config.m_renderer->SetModelConstants(transform, color);
+
+#ifdef ENGINE_RENDER_D3D11
 		s_config.m_renderer->BindTexture(m_texture); // font or white texture
-		s_config.m_renderer->BindShader(nullptr);
 		s_config.m_renderer->SetSamplerMode(SamplerMode::POINT_CLAMP);
+#endif // ENGINE_RENDER_D3D11
+
+#ifdef ENGINE_RENDER_D3D12
+		UnlitRenderResources resources;
+		resources.diffuseTextureIndex = s_config.m_renderer->GetSrvIndexFromLoadedTexture(m_texture);
+		resources.diffuseSamplerIndex = s_config.m_renderer->GetDefaultSamplerIndex(SamplerMode::POINT_CLAMP);
+		resources.cameraConstantsIndex = s_config.m_renderer->GetCurrentCameraConstantsIndex();
+#endif // ENGINE_RENDER_D3D12
+
+		s_config.m_renderer->SetModelConstants(transform, color);
+#ifdef ENGINE_RENDER_D3D12
+		resources.modelConstantsIndex = s_config.m_renderer->GetCurrentModelConstantsIndex();
+#endif // ENGINE_RENDER_D3D12
+
+#ifdef ENGINE_RENDER_D3D12
+			s_config.m_renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
+#endif // ENGINE_RENDER_D3D12
+
+		s_config.m_renderer->BindShader(nullptr);
 		s_config.m_renderer->SetRasterizerMode(m_rasterizerMode); // some draw are wired
 
 		if (m_mode == DebugRenderMode::ALWAYS)
 		{
 			s_config.m_renderer->SetBlendMode(BlendMode::ALPHA);
 			s_config.m_renderer->SetDepthMode(DepthMode::DISABLED);
+			s_config.m_renderer->SetRenderTargetFormats();
 			s_config.m_renderer->DrawVertexArray(m_vertexs);
 		}
 		else if (m_mode == DebugRenderMode::USE_DEPTH)
 		{
 			s_config.m_renderer->SetBlendMode(BlendMode::ALPHA);
 			s_config.m_renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
+			s_config.m_renderer->SetRenderTargetFormats();
+
 			s_config.m_renderer->DrawVertexArray(m_vertexs);
 
 		}
@@ -110,13 +132,28 @@ namespace
 		{
 			Rgba8 xRayColor(color.r, color.g, color.b, color.a / 2);
 			s_config.m_renderer->SetModelConstants(transform, xRayColor);
+#ifdef ENGINE_RENDER_D3D12
+			resources.modelConstantsIndex = s_config.m_renderer->GetCurrentModelConstantsIndex();
+#endif // ENGINE_RENDER_D3D12
 			s_config.m_renderer->SetBlendMode(BlendMode::ALPHA);
 			s_config.m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
+			s_config.m_renderer->SetRenderTargetFormats();
+#ifdef ENGINE_RENDER_D3D12
+			s_config.m_renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
+#endif // ENGINE_RENDER_D3D12
 			s_config.m_renderer->DrawVertexArray(m_vertexs);
 
 			s_config.m_renderer->SetModelConstants(transform, color);
+#ifdef ENGINE_RENDER_D3D12
+			resources.modelConstantsIndex = s_config.m_renderer->GetCurrentModelConstantsIndex();
+#endif // ENGINE_RENDER_D3D12
+
 			s_config.m_renderer->SetBlendMode(BlendMode::OPAQUE);
 			s_config.m_renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
+			s_config.m_renderer->SetRenderTargetFormats();
+#ifdef ENGINE_RENDER_D3D12
+			s_config.m_renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
+#endif // ENGINE_RENDER_D3D12
 			s_config.m_renderer->DrawVertexArray(m_vertexs);
 		}
 	}

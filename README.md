@@ -14,4 +14,3 @@
 
 
 ## How to use
-In August 2025, I will upload Protogame2D and Protogame3D as examples.

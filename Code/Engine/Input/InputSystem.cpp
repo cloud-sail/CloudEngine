@@ -24,6 +24,7 @@ unsigned char const KEYCODE_RIGHTBRACKET	= VK_OEM_6; //  ']}' for US
 
 unsigned char const KEYCODE_SHIFT = VK_SHIFT;
 unsigned char const KEYCODE_CONTROL = VK_CONTROL;
+unsigned char const KEYCODE_ALT = VK_MENU;
 unsigned char const KEYCODE_BACKSPACE = VK_BACK;
 unsigned char const KEYCODE_INSERT = VK_INSERT;
 unsigned char const KEYCODE_DELETE = VK_DELETE;

@@ -19,6 +19,7 @@ extern unsigned char const KEYCODE_RIGHTBRACKET;
 
 extern unsigned char const KEYCODE_SHIFT;
 extern unsigned char const KEYCODE_CONTROL;
+extern unsigned char const KEYCODE_ALT;
 extern unsigned char const KEYCODE_BACKSPACE;
 extern unsigned char const KEYCODE_INSERT;
 extern unsigned char const KEYCODE_DELETE;

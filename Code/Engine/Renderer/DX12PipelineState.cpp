@@ -183,6 +183,9 @@ void GraphicsPSO::SetShader(Shader* shader)
 
 	switch (m_inputLayoutMode)
 	{
+	case VertexType::VERTEX_NONE:
+		m_PSODesc.InputLayout = { nullptr, 0 };
+		break;
 	case VertexType::VERTEX_PCU:
 		m_PSODesc.InputLayout = { g_InputLayout_PCU, _countof(g_InputLayout_PCU) };
 		break;
@@ -195,7 +198,7 @@ void GraphicsPSO::SetShader(Shader* shader)
 	}
 }
 
-void GraphicsPSO::SetRenderTargetFormats(UINT numRTVs, DXGI_FORMAT* rtvFormats, DXGI_FORMAT dsvFormat, UINT msaaCount /*= 1*/, UINT msaaQuality /*= 0*/)
+void GraphicsPSO::SetRenderTargetFormats(UINT numRTVs, DXGI_FORMAT const* rtvFormats, DXGI_FORMAT dsvFormat, UINT msaaCount /*= 1*/, UINT msaaQuality /*= 0*/)
 {
 	for (UINT i = 0; i < numRTVs; ++i)
 	{
@@ -205,6 +208,13 @@ void GraphicsPSO::SetRenderTargetFormats(UINT numRTVs, DXGI_FORMAT* rtvFormats, 
 		m_PSODesc.RTVFormats[i] = DXGI_FORMAT_UNKNOWN;
 	m_PSODesc.NumRenderTargets = numRTVs;
 	m_PSODesc.DSVFormat = dsvFormat;
+
+	// if dsvFormat is UNKNOWN, it means no dsv is used, and DepthStencil Should be set as Disabled
+	if (dsvFormat == DXGI_FORMAT_UNKNOWN)
+	{
+		GUARANTEE_OR_DIE(m_PSODesc.DepthStencilState.DepthEnable == FALSE && m_PSODesc.DepthStencilState.StencilEnable == FALSE, "Please set Depth Mode as Disabled first");
+	}
+
 	m_PSODesc.SampleDesc.Count = msaaCount;
 	m_PSODesc.SampleDesc.Quality = msaaQuality;
 }
@@ -250,13 +260,74 @@ size_t GraphicsPSO::GetHashKey() const
 
 	// Not important to hash now
 	hash_combine(seed, m_PSODesc.NumRenderTargets);
-	for (UINT i = 0; i < m_PSODesc.NumRenderTargets; ++i) {
-		hash_combine(seed, m_PSODesc.RTVFormats[i]);
+	for (UINT i = 0; i < 8; ++i) 
+	{
+		if (i < m_PSODesc.NumRenderTargets) 
+		{
+			hash_combine(seed, m_PSODesc.RTVFormats[i]);
+		}
+		else 
+		{
+			hash_combine(seed, DXGI_FORMAT_UNKNOWN);
+		}
 	}
+
 	hash_combine(seed, m_PSODesc.DSVFormat);
 	hash_combine(seed, m_PSODesc.SampleDesc.Count);
 	hash_combine(seed, m_PSODesc.SampleDesc.Quality);
 	hash_combine(seed, m_PSODesc.PrimitiveTopologyType);
+
+	return seed;
+}
+
+ComputePSO::ComputePSO(const wchar_t* name /*= L"Unnamed Compute PSO"*/)
+	: PSO(name)
+{
+	m_PSODesc = {};
+	m_PSODesc.NodeMask = 1;
+}
+
+void ComputePSO::SetShader(Shader* shader)
+{
+	m_shaderName = shader->GetName();
+
+
+	m_PSODesc.CS.pShaderBytecode = (shader->m_computeShaderByteCode.size() > 0) ? shader->m_computeShaderByteCode.data() : nullptr;
+	m_PSODesc.CS.BytecodeLength = shader->m_computeShaderByteCode.size();
+}
+
+void ComputePSO::Finalize()
+{
+	GUARANTEE_OR_DIE(m_rootSignature != nullptr, "Compute PSO does not have a rootsignature.");
+	m_PSODesc.pRootSignature = m_rootSignature; // may need to be hashed
+
+	size_t hashKey = GetHashKey();
+
+	auto found = s_computePSOHashMap.find(hashKey);
+	if (found != s_computePSOHashMap.end())
+	{
+		m_PSO = found->second;
+		return;
+	}
+
+	HRESULT hr = DX12Renderer::s_device->CreateComputePipelineState(&m_PSODesc, IID_PPV_ARGS(&m_PSO));
+	if (FAILED(hr))
+	{
+		ERROR_AND_DIE("Failed to create Compute PSO!");
+	}
+
+	s_computePSOHashMap[hashKey] = m_PSO;
+
+	static int i = 0;
+	++i;
+	std::wstring newName = WStringf(L"%d", i);
+	m_PSO->SetName(newName.c_str());
+}
+
+size_t ComputePSO::GetHashKey() const
+{
+	size_t seed = 0;
+	hash_combine(seed, m_shaderName);
 
 	return seed;
 }

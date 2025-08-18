@@ -1,5 +1,7 @@
 #pragma once
+#include "Game/EngineBuildPreferences.hpp"
 
+#ifdef ENGINE_RENDER_D3D11
 inline const char* g_defaultShaderSource = R"(
 cbuffer CameraConstants: register(b2)
 {
@@ -61,3 +63,9 @@ float4 PixelMain(v2p_t input) : SV_Target0
 	return float4(color);
 }
 )";
+
+#endif // ENGINE_RENDER_D3D11
+
+#ifdef ENGINE_RENDER_D3D12
+
+#endif // ENGINE_RENDER_D3D12

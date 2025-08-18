@@ -255,12 +255,28 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, Bitmap
 		currentRow++;
 	}
 
+#ifdef ENGINE_RENDER_D3D11
 	renderer.BindTexture(&font.GetTexture());
+	renderer.SetSamplerMode(SamplerMode::POINT_CLAMP);
+#endif // ENGINE_RENDER_D3D11
+
+	//No need to Set Model Constants? it is set in BeginCamera
+#ifdef ENGINE_RENDER_D3D12
+	// resource settings
+	UnlitRenderResources resources;
+	resources.diffuseTextureIndex = renderer.GetSrvIndexFromLoadedTexture(&font.GetTexture(), DefaultTexture::WhiteOpaque2D);
+	resources.diffuseSamplerIndex = renderer.GetDefaultSamplerIndex(SamplerMode::POINT_CLAMP);
+	resources.cameraConstantsIndex = renderer.GetCurrentCameraConstantsIndex();
+	resources.modelConstantsIndex = renderer.GetCurrentModelConstantsIndex();
+
+	renderer.SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
+#endif // ENGINE_RENDER_D3D12
+
 	renderer.BindShader(nullptr);
 	renderer.SetBlendMode(BlendMode::ALPHA);
-	renderer.SetSamplerMode(SamplerMode::POINT_CLAMP);
 	renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer.SetDepthMode(DepthMode::DISABLED);
+	renderer.SetRenderTargetFormats();
 	renderer.DrawVertexArray(verts);
 
 	if (m_insertionPointVisible)
@@ -273,12 +289,28 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, Bitmap
 		constexpr float insertionPointAspectRatio = 0.15f;
 		AddVertsForLineSegment2D(insertionPointVerts, insertionPointStartPos, insertionPointStartPos + Vec2(0.f, insertionPointLength), insertionPointAspectRatio * fontAspectScale * insertionPointLength, DevConsole::INFO_INSERTION_POINT);
 
+#ifdef ENGINE_RENDER_D3D11
 		renderer.BindTexture(nullptr);
+		renderer.SetSamplerMode(SamplerMode::POINT_CLAMP);
+#endif // ENGINE_RENDER_D3D11
+
+		//No need to Set Model Constants? it is set in BeginCamera
+#ifdef ENGINE_RENDER_D3D12
+		// resource settings
+		UnlitRenderResources insertionResources;
+		insertionResources.diffuseTextureIndex = renderer.GetSrvIndexFromLoadedTexture(nullptr, DefaultTexture::WhiteOpaque2D);
+		insertionResources.diffuseSamplerIndex = renderer.GetDefaultSamplerIndex(SamplerMode::POINT_CLAMP);
+		insertionResources.cameraConstantsIndex = renderer.GetCurrentCameraConstantsIndex();
+		insertionResources.modelConstantsIndex = renderer.GetCurrentModelConstantsIndex();
+
+		renderer.SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &insertionResources);
+#endif // ENGINE_RENDER_D3D12
+
 		renderer.BindShader(nullptr);
 		renderer.SetBlendMode(BlendMode::ALPHA);
-		renderer.SetSamplerMode(SamplerMode::POINT_CLAMP);
 		renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 		renderer.SetDepthMode(DepthMode::DISABLED);
+		renderer.SetRenderTargetFormats();
 		renderer.DrawVertexArray(insertionPointVerts);
 	}
 }
@@ -404,12 +436,30 @@ void DevConsole::Render(AABB2 const& bounds, Renderer* rendererOverride /*= null
 	// translucent black quad
 	std::vector<Vertex_PCU> verts;
 	AddVertsForAABB2D(verts, bounds, Rgba8(0, 0, 0, 128));
+
+#ifdef ENGINE_RENDER_D3D11
 	renderer->BindTexture(nullptr);
+	renderer->SetSamplerMode(SamplerMode::POINT_CLAMP);
+#endif // ENGINE_RENDER_D3D11
+
+#ifdef ENGINE_RENDER_D3D12
+	// resource settings
+	UnlitRenderResources resources;
+	resources.diffuseTextureIndex = renderer->GetSrvIndexFromLoadedTexture(nullptr, DefaultTexture::WhiteOpaque2D);
+	resources.diffuseSamplerIndex = renderer->GetDefaultSamplerIndex(SamplerMode::POINT_CLAMP);
+	resources.cameraConstantsIndex = renderer->GetCurrentCameraConstantsIndex();
+	resources.modelConstantsIndex = renderer->GetCurrentModelConstantsIndex();
+
+	renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
+#endif // ENGINE_RENDER_D3D12
+
+
 	renderer->BindShader(nullptr);
 	renderer->SetBlendMode(BlendMode::ALPHA);
-	renderer->SetSamplerMode(SamplerMode::POINT_CLAMP);
 	renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer->SetDepthMode(DepthMode::DISABLED);
+	renderer->SetRenderTargetFormats();
+
 	renderer->DrawVertexArray(verts);
 
 	switch (m_mode)

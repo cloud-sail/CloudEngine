@@ -32,6 +32,12 @@ namespace DX12Math
 	{
 		return 0 == (value & (alignment - 1));
 	}
+
+
+	inline size_t AlignUpDiv(size_t value, size_t alignment)
+	{
+		return ((value + alignment - 1) / alignment) * alignment;
+	}
 }
 
 
@@ -74,6 +80,31 @@ DynAlloc DX12LinearAllocator::Allocate(size_t sizeInBytes, size_t alignment /*= 
 	size_t const alignedSize = DX12Math::AlignUpWithMask(sizeInBytes, alignmentMask);
 
 	m_curOffset = DX12Math::AlignUpWithMask(m_curOffset, alignmentMask);
+
+	if (m_curOffset + alignedSize > m_totalSize)
+	{
+		ERROR_AND_DIE("Linear Allocator is out of memory!");
+	}
+
+	DynAlloc alloc;
+	alloc.m_buffer = m_uploadBuffer; // Base resource
+	alloc.m_dataPtr = static_cast<uint8_t*>(m_mappedPtr) + m_curOffset;
+	alloc.m_gpuAddress = m_uploadBuffer->GetGPUVirtualAddress() + m_curOffset;
+	alloc.m_size = alignedSize;
+	alloc.m_offset = m_curOffset;
+
+	m_curOffset += alignedSize;
+
+	return alloc;
+}
+
+DynAlloc DX12LinearAllocator::AllocateAnyAlign(size_t sizeInBytes, size_t alignment /*= D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT*/)
+{
+	GUARANTEE_OR_DIE(alignment > 0, "alignment must be greater than zero.");
+
+	size_t const alignedSize = DX12Math::AlignUpDiv(sizeInBytes, alignment);
+
+	m_curOffset = DX12Math::AlignUpDiv(m_curOffset, alignment);
 
 	if (m_curOffset + alignedSize > m_totalSize)
 	{

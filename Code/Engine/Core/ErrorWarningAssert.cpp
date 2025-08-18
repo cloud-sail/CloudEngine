@@ -63,6 +63,26 @@ void DebuggerPrintf( char const* messageFormat, ... )
 }
 
 
+void DebuggerWPrintf(wchar_t const* messageFormat, ...)
+{
+	const int MESSAGE_MAX_LENGTH = 2048;
+	wchar_t messageLiteral[MESSAGE_MAX_LENGTH];
+	va_list variableArgumentList;
+	va_start(variableArgumentList, messageFormat);
+	vswprintf_s(messageLiteral, MESSAGE_MAX_LENGTH, messageFormat, variableArgumentList);
+	va_end(variableArgumentList);
+	messageLiteral[MESSAGE_MAX_LENGTH - 1] = L'\0'; // auto-terminate
+
+#if defined(PLATFORM_WINDOWS)
+	if (IsDebuggerAvailable())
+	{
+		OutputDebugStringW(messageLiteral);
+	}
+#endif
+
+	std::wcout << messageLiteral;
+}
+
 //-----------------------------------------------------------------------------------------------
 // Converts a SeverityLevel to a Windows MessageBox icon type (MB_etc)
 //

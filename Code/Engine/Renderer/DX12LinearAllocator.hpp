@@ -23,6 +23,7 @@ public:
 
 	// Alignment: cb - 256; vb/ib - 4 or16
 	DynAlloc Allocate(size_t sizeInBytes, size_t alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+	DynAlloc AllocateAnyAlign(size_t sizeInBytes, size_t alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
 	// Reset after the frame has complete its GPU work
 	void Reset();
