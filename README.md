@@ -29,6 +29,7 @@ A custom C++ game Engine.
 
 
 ## Projects using this engine
+- [ShaderTests](https://github.com/cloud-sail/ShaderTests) - Test experimental shaders and validate the renderer system
 - [ChessDX](https://github.com/cloud-sail/ChessDX) - Chess Game with DirectX 12 Rendering, and Networked Multiplayer
 - [Doomenstein](https://github.com/cloud-sail/Doomenstein) - Doom-like 3D FPS game with data-driven actors, weapons, and maps
 - [Protogame3D](https://github.com/cloud-sail/Protogame3D) - 3D game template project
