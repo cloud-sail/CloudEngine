@@ -32,6 +32,19 @@ void Window::Startup()
 
 void Window::BeginFrame()
 {
+	if (m_isDesiredFullscreen != m_isFullscreen)
+	{
+		m_isFullscreen = !m_isFullscreen;
+		if (m_isFullscreen)
+		{
+			SetBorderlessFullscreen();
+		}
+		else
+		{
+			SetWindowed();
+		}
+	}
+
 	RunMessagePump();
 }
 
@@ -294,9 +307,9 @@ void Window::CreateOSWindow()
 	windowClassDescription.lpszClassName = TEXT("Simple Window Class");
 	RegisterClassEx(&windowClassDescription);
 
-	// #SD1ToDo: Add support for fullscreen mode (requires different window style flags than windowed mode)
-	//DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER  | WS_SYSMENU | WS_OVERLAPPED;
-	DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_SYSMENU | WS_OVERLAPPED | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
+	DWORD const windowStyleFlags = WS_OVERLAPPEDWINDOW;
+	//DWORD const windowStyleFlags = WS_CAPTION | WS_BORDER | WS_SYSMENU | WS_OVERLAPPED | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_THICKFRAME;
+	//DWORD const windowStyleFlags = WS_POPUP;
 	DWORD const windowStyleExFlags = WS_EX_APPWINDOW;
 
 	// Get desktop rect, dimensions, aspect
@@ -365,8 +378,113 @@ void Window::CreateOSWindow()
 	SetCursor(cursor);
 }
 
+void Window::SetBorderlessFullscreen()
+{
+	HWND hwnd = static_cast<HWND>(m_windowHandle);
+
+	HMONITOR hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+	MONITORINFO monitorInfo = { 0 };
+	monitorInfo.cbSize = sizeof(monitorInfo);
+	GetMonitorInfo(hMonitor, &monitorInfo);
+
+	int monitorLeft = monitorInfo.rcMonitor.left;
+	int monitorTop = monitorInfo.rcMonitor.top;
+	int monitorWidth = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+	int monitorHeight = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+
+	LONG style = GetWindowLong(hwnd, GWL_STYLE);
+	style &= ~(WS_OVERLAPPEDWINDOW);
+	style |= WS_POPUP;
+	SetWindowLong(hwnd, GWL_STYLE, style);
+
+	LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+	exStyle &= ~(WS_EX_APPWINDOW | WS_EX_WINDOWEDGE);
+	SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+
+	ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+
+	SetWindowPos(hwnd, HWND_TOP,
+		monitorLeft, monitorTop, monitorWidth, monitorHeight,
+		SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+
+	m_clientDimensions.x = monitorWidth;
+	m_clientDimensions.y = monitorHeight;
+}
+
+void Window::SetWindowed()
+{
+	HWND hwnd = static_cast<HWND>(m_windowHandle);
+
+	LONG style = GetWindowLong(hwnd, GWL_STYLE);
+	style &= ~(WS_POPUP);
+	style |= WS_OVERLAPPEDWINDOW;
+	SetWindowLong(hwnd, GWL_STYLE, style);
+
+	LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+	exStyle |= (WS_EX_APPWINDOW | WS_EX_WINDOWEDGE);
+	SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+
+	HMONITOR hMonitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+
+	MONITORINFO monitorInfo = { 0 };
+	monitorInfo.cbSize = sizeof(monitorInfo);
+	GetMonitorInfo(hMonitor, &monitorInfo);
+
+	RECT monitorRect = monitorInfo.rcMonitor;
+
+	float desktopWidth = (float)(monitorRect.right - monitorRect.left);
+	float desktopHeight = (float)(monitorRect.bottom - monitorRect.top);
+	float desktopAspect = desktopWidth / desktopHeight;
+	float clientAspect = m_config.m_aspectRatio;
+
+	constexpr float maxClientFractionOfDesktop = 0.90f;
+	float clientWidth = desktopWidth * maxClientFractionOfDesktop;
+	float clientHeight = desktopHeight * maxClientFractionOfDesktop;
+
+	if (clientAspect > desktopAspect) 
+	{
+		clientHeight = clientWidth / clientAspect;
+	}
+	else 
+	{
+		clientWidth = clientHeight * clientAspect;
+	}
+
+	float clientMarginX = 0.5f * (desktopWidth - clientWidth);
+	float clientMarginY = 0.5f * (desktopHeight - clientHeight);
+
+	int left = monitorRect.left + (int)clientMarginX;
+	int top = monitorRect.top + (int)clientMarginY;
+	int width = (int)clientWidth;
+	int height = (int)clientHeight;
+
+	RECT windowRect = { left, top, left + width, top + height };
+	AdjustWindowRectEx(&windowRect, WS_OVERLAPPEDWINDOW, FALSE, WS_EX_APPWINDOW);
+	
+	ShowWindow(hwnd, SW_RESTORE);
+
+	SetWindowPos(
+		hwnd,
+		HWND_TOP,
+		windowRect.left,
+		windowRect.top,
+		windowRect.right - windowRect.left,
+		windowRect.bottom - windowRect.top,
+		SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_SHOWWINDOW
+	);
+
+	m_clientDimensions.x = width;
+	m_clientDimensions.y = height;
+}
+
 void Window::UpdateClientDimensions(IntVec2 newDimensions)
 {
 	m_clientDimensions = newDimensions;
+}
+
+void Window::ToggleFullscreen()
+{
+	m_isDesiredFullscreen = !m_isDesiredFullscreen;
 }
 

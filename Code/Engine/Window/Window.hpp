@@ -55,12 +55,22 @@ private:
 	void* m_displayContext = nullptr; // Actually a Windows HDC on the Windows platform // imgui may use it
 	IntVec2 m_clientDimensions;
 
-
 public:
+
 	void UpdateClientDimensions(IntVec2 newDimensions);
 
 	bool m_isMinimized = false;
 	bool m_isMaximized = false;
 	bool m_isResizing = false;
+
+public:
+	void ToggleFullscreen();
+
+private:
+	void SetBorderlessFullscreen();
+	void SetWindowed();
+private:
+	bool m_isFullscreen = false;
+	bool m_isDesiredFullscreen = false;
 };
 

@@ -2312,7 +2312,7 @@ void DX12Renderer::OnResize()
 
 	FireEvent(WINDOW_RESIZE_EVENT);
 
-	DebuggerPrintf("OnResize\n");
+	DebuggerPrintf("OnResize: %d x %d\n", m_config.m_window->GetClientDimensions().x, m_config.m_window->GetClientDimensions().y);
 }
 
 
