@@ -45,7 +45,7 @@ struct DeferredReleaseItem
 class DX12DeferredReleaseQueue
 {
 public:
-	DX12DeferredReleaseQueue() = default;
+	DX12DeferredReleaseQueue(uint32_t maxResourceReleasesPerFrame);
 	~DX12DeferredReleaseQueue(); // Remember to Process all fence value, release all objects
 
 	DX12DeferredReleaseQueue(const DX12DeferredReleaseQueue&) = delete;
@@ -59,7 +59,7 @@ public:
 
 private:
 	std::vector<DeferredReleaseItem> m_queue;
-
+	uint32_t m_maxResourceReleasesPerFrame = 32;
 };
 #endif // ENGINE_RENDER_D3D12
 

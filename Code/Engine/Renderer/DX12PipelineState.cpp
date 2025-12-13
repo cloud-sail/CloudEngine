@@ -4,7 +4,7 @@
 #ifdef ENGINE_RENDER_D3D12
 
 #include "Engine/Core/EngineCommon.hpp"
-#include "Engine/Core/HashCombine.hpp"
+#include "Engine/Core/HashUtils.hpp"
 #include "Engine/Renderer/DX12Renderer.hpp"
 #include "Engine/Renderer/Shader.hpp"
 #include "Engine/Renderer/DX12GraphicsCommon.hpp"
@@ -65,6 +65,39 @@ static const D3D12_INPUT_ELEMENT_DESC g_InputLayout_Instancing[] =
 	{ "WORLD",    3, DXGI_FORMAT_R32G32B32A32_FLOAT, 1,  D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 },
 };
 
+static const D3D12_INPUT_ELEMENT_DESC g_InputLayout_PNMD[] =
+{
+	{ "POSITION",   0,    DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,                        D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{ "NORMAL",     0,    DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	{ "MATDENS",	0,    DXGI_FORMAT_R8G8_UINT,       0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	//{ "MATERIALID", 0,    DXGI_FORMAT_R32_UINT,        0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+	//{ "DENSITY",    0,    DXGI_FORMAT_R32_UINT,        0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+};
+
+static const D3D12_INPUT_ELEMENT_DESC g_InputLayout_Terrain[] =
+{
+	{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0,
+	  0,
+	  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+
+	  // DXGI_FORMAT_R8G8_UNORM  DXGI_FORMAT_R16G16_UNORM  DXGI_FORMAT_R32G32B32_FLOAT
+	{ "NORMAL", 0, DXGI_FORMAT_R8G8_UNORM, 0,
+	  D3D12_APPEND_ALIGNED_ELEMENT,
+	  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+
+	{ "MATERIAL_PRIMARY", 0, DXGI_FORMAT_R8_UINT, 0,
+	  D3D12_APPEND_ALIGNED_ELEMENT, 
+	  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+
+	{ "MATERIAL_SECONDARY", 0, DXGI_FORMAT_R8_UINT, 0,
+	  D3D12_APPEND_ALIGNED_ELEMENT,
+	  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+
+	{ "BLEND_FACTOR", 0, DXGI_FORMAT_R8_UNORM, 0, // [0, 255] to [0, 1]
+	  D3D12_APPEND_ALIGNED_ELEMENT,
+	  D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+};
+
 GraphicsPSO::GraphicsPSO(const wchar_t* name /*= L"Unnamed Graphics PSO"*/)
 	: PSO(name)
 {
@@ -95,6 +128,7 @@ void GraphicsPSO::SetBlendMode(BlendMode blendMode)
 		m_PSODesc.BlendState = DX12Graphics::BlendAdditive;
 		break;
 	default:
+		ERROR_AND_DIE("Unknown blend mode!");
 		break;
 	}
 }
@@ -147,24 +181,6 @@ void GraphicsPSO::SetDepthMode(DepthMode depthMode)
 	}
 }
 
-//void GraphicsPSO::SetInputLayout(VertexType inputLayoutMode)
-//{
-//	m_inputLayoutMode = inputLayoutMode;
-//
-//	switch (m_inputLayoutMode)
-//	{
-//	case VertexType::VERTEX_PCU:
-//		m_PSODesc.InputLayout = { g_InputLayout_PCU, _countof(g_InputLayout_PCU) };
-//		break;
-//	case VertexType::VERTEX_PCUTBN:
-//		m_PSODesc.InputLayout = { g_InputLayout_PCUTBN, _countof(g_InputLayout_PCUTBN) };
-//		break;
-//	default:
-//		ERROR_AND_DIE("Unknown Input Layout!");
-//		break;
-//	}
-//}
-
 void GraphicsPSO::SetShader(Shader* shader)
 {
 	m_shaderName = shader->GetName();
@@ -191,6 +207,12 @@ void GraphicsPSO::SetShader(Shader* shader)
 		break;
 	case VertexType::VERTEX_PCUTBN:
 		m_PSODesc.InputLayout = { g_InputLayout_PCUTBN, _countof(g_InputLayout_PCUTBN) };
+		break;
+	case VertexType::VERTEX_PNMD:
+		m_PSODesc.InputLayout = { g_InputLayout_PNMD, _countof(g_InputLayout_PNMD) };
+		break;
+	case VertexType::VERTEX_TERRAIN:
+		m_PSODesc.InputLayout = { g_InputLayout_Terrain, _countof(g_InputLayout_Terrain) };
 		break;
 	default:
 		ERROR_AND_DIE("Unknown Input Layout!");

@@ -23,20 +23,7 @@ struct OBJData
 
 };
 
-struct StaticModelInfo
-{
-	std::string m_modelFilePath = "";
-	std::string m_shaderName = "";
-	std::string m_diffuseMapFilePath = "";
-	std::string m_normalMapFilePath = "";
-	std::string m_specGlossEmitMapFilePath = "";
-	float		m_unitsPerMeter = 1.f;
-	std::string m_xDirection = "forward";
-	std::string m_yDirection = "left";
-	std::string m_zDirection = "up";
-	bool		m_frontCCW = true;
-	Vec3		m_translation = Vec3::ZERO;
-};
+
 
 Vec3 GetVec3FromString(std::string const& direction)
 {
@@ -120,6 +107,54 @@ bool LoadOBJFromXML(std::vector<Vertex_PCUTBN>& out_verts, const char* modelXmlF
 	Mat44 posTransform = rotTransform;
 	posTransform.AppendScaleUniform3D(1.f / modelInfo.m_unitsPerMeter);
 	posTransform.SetTranslation3D(modelInfo.m_translation);
+
+	TransformVertexArray3D(out_verts, posTransform, true, false);
+	TransformVertexArray3D(out_verts, tbnTransform, false, true);
+
+	return true;
+}
+
+bool LoadOBJFromXML(std::vector<Vertex_PCUTBN>& out_verts, StaticModelInfo& out_modelInfo, const char* modelXmlFilePath)
+{
+	XmlDocument modelXML;
+	XmlResult result = modelXML.LoadFile(modelXmlFilePath);
+	if (result != tinyxml2::XML_SUCCESS)
+	{
+		ERROR_RECOVERABLE(Stringf("Failed to load OBJ from XML file \"%s\"", modelXmlFilePath));
+		return false;
+	}
+	XmlElement* rootElement = modelXML.RootElement();
+	if (rootElement == nullptr)
+	{
+		ERROR_RECOVERABLE(Stringf("Model XML file \"%s\" was invalid (missing root element)", modelXmlFilePath));
+		return false;
+	}
+
+	out_modelInfo.m_modelFilePath = ParseXmlAttribute(*rootElement, "objFile", out_modelInfo.m_modelFilePath);
+	out_modelInfo.m_shaderName = ParseXmlAttribute(*rootElement, "shader", out_modelInfo.m_shaderName);
+	out_modelInfo.m_diffuseMapFilePath = ParseXmlAttribute(*rootElement, "diffuseMap", out_modelInfo.m_diffuseMapFilePath);
+	out_modelInfo.m_normalMapFilePath = ParseXmlAttribute(*rootElement, "normalMap", out_modelInfo.m_normalMapFilePath);
+	out_modelInfo.m_specGlossEmitMapFilePath = ParseXmlAttribute(*rootElement, "specGlossEmitMap", out_modelInfo.m_specGlossEmitMapFilePath);
+	out_modelInfo.m_unitsPerMeter = ParseXmlAttribute(*rootElement, "unitsPerMeter", out_modelInfo.m_unitsPerMeter);
+	out_modelInfo.m_xDirection = ParseXmlAttribute(*rootElement, "x", out_modelInfo.m_xDirection);
+	out_modelInfo.m_yDirection = ParseXmlAttribute(*rootElement, "y", out_modelInfo.m_yDirection);
+	out_modelInfo.m_zDirection = ParseXmlAttribute(*rootElement, "z", out_modelInfo.m_zDirection);
+	out_modelInfo.m_frontCCW = ParseXmlAttribute(*rootElement, "frontCounterClockwise", out_modelInfo.m_frontCCW);
+	out_modelInfo.m_translation = ParseXmlAttribute(*rootElement, "translation", out_modelInfo.m_translation);
+
+	std::string fileString;
+	FileReadToString(fileString, out_modelInfo.m_modelFilePath);
+
+	ParseOBJMeshTextBuffer(out_verts, fileString, out_modelInfo.m_frontCCW);
+
+	Mat44 rotTransform = Mat44(GetVec3FromString(out_modelInfo.m_xDirection),
+		GetVec3FromString(out_modelInfo.m_yDirection),
+		GetVec3FromString(out_modelInfo.m_zDirection),
+		Vec3::ZERO);
+	Mat44 tbnTransform = rotTransform;
+	Mat44 posTransform = rotTransform;
+	posTransform.AppendScaleUniform3D(1.f / out_modelInfo.m_unitsPerMeter);
+	posTransform.SetTranslation3D(out_modelInfo.m_translation);
 
 	TransformVertexArray3D(out_verts, posTransform, true, false);
 	TransformVertexArray3D(out_verts, tbnTransform, false, true);

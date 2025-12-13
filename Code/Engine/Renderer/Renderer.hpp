@@ -18,6 +18,9 @@ public:
 	virtual void ClearScreen(Rgba8 const& clearColor) = 0;
 	virtual void BeginCamera(Camera const& camera) = 0;
 	virtual void EndCamera(Camera const& camera) = 0;
+#ifdef ENGINE_RENDER_D3D12
+	virtual void BeginCamera(Camera const& camera, Vec2 const& targetSize) = 0;
+#endif // ENGINE_RENDER_D3D12
 
 public:
 	virtual VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride) = 0;
@@ -41,6 +44,26 @@ public:
 
 #ifdef ENGINE_RENDER_D3D12
 	virtual void DrawProcedural(unsigned int vertexCount) = 0;
+
+	virtual void DrawProceduralInstanced(unsigned int vertexCountPerInstance, unsigned int instanceCount) = 0;
+
+	virtual void DrawVertexBufferInstanced(VertexBuffer* vbo, unsigned int vertexCountPerInstance, unsigned int instanceCount) = 0;
+
+	virtual void DrawIndexedVertexBufferInstanced(VertexBuffer* vbo, IndexBuffer* ibo,
+		unsigned int indexCountPerInstance, unsigned int instanceCount) = 0;
+
+	virtual void DrawVertexArrayInstanced(std::vector<Vertex_PCU> const& verts, unsigned int instanceCount) = 0;
+	virtual void DrawVertexArrayInstanced(std::vector<Vertex_PCUTBN> const& verts, unsigned int instanceCount) = 0;
+
+	virtual void DrawIndexedVertexArrayInstanced(std::vector<Vertex_PCU> const& verts,
+		std::vector<unsigned int> const& indexes,
+		unsigned int instanceCount) = 0;
+	virtual void DrawIndexedVertexArrayInstanced(std::vector<Vertex_PCUTBN> const& verts,
+		std::vector<unsigned int> const& indexes,
+		unsigned int instanceCount) = 0;
+
+	virtual void DrawIndexedProceduralInstanced(IndexBuffer* ibo, unsigned int indexCountPerInstance, unsigned int instanceCount) = 0;
+	virtual void DrawIndexedProceduralInstanced(std::vector<unsigned int> const& indexes, unsigned int instanceCount) = 0;
 
 	// Dispatch Calls
 	virtual void Dispatch1D(unsigned int threadCountX, unsigned int groupSizeX = 64) = 0;
@@ -119,6 +142,8 @@ public:
     virtual void ClearRenderTargetByIndex(uint32_t rtvIndex, Rgba8 const& clearColor) = 0;
     virtual void ClearDepthAndStencilByIndex(uint32_t dsvIndex, float clearDepth = 1.f, uint8_t clearStencil = 0) = 0;
 
+	virtual uint32_t GetCurrentBackBufferIndex() const = 0;
+	virtual uint32_t GetDefaultDepthBufferIndex() const = 0;
     virtual Texture* GetDefaultDepthBuffer() const = 0;
 
 	virtual void SetGraphicsBindlessResources(size_t resourceSizeInBytes, const void* pResource) = 0;

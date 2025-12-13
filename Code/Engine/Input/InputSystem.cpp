@@ -17,6 +17,7 @@ unsigned char const KEYCODE_ENTER = VK_RETURN;
 
 unsigned char const KEYCODE_LEFT_MOUSE		= VK_LBUTTON;
 unsigned char const KEYCODE_RIGHT_MOUSE		= VK_RBUTTON;
+unsigned char const KEYCODE_MIDDLE_MOUSE	= VK_MBUTTON;
 
 unsigned char const KEYCODE_TILDE			= VK_OEM_3; // '`~' for US
 unsigned char const KEYCODE_LEFTBRACKET		= VK_OEM_4; //  '[{' for US
@@ -170,6 +171,39 @@ void InputSystem::Shutdown()
 {
 }
 
+bool InputSystem::HasAnyKeyboardMouseInput() const
+{
+	// Check if any keyboard key is pressed
+	for (int i = 0; i < NUM_KEYCODES; ++i)
+	{
+		if (IsGameplayKey(static_cast<unsigned char>(i)) && m_keyStates[i].m_isPressed)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool InputSystem::HasMouseMoved() const
+{
+	return m_cursorState.m_cursorClientDelta.x != 0 || m_cursorState.m_cursorClientDelta.y != 0;
+}
+
+bool InputSystem::HasAnyControllerInput(int controllerID) const
+{
+	if (controllerID < 0 || controllerID >= NUM_XBOX_CONTROLLERS)
+	{
+		return false;
+	}
+
+	if (!m_controllers[controllerID].IsConnected())
+	{
+		return false;
+	}
+
+	return m_controllers[controllerID].HasAnyInput();
+}
+
 bool InputSystem::WasKeyJustPressed(unsigned char keyCode) const
 {
 	return !m_keyStates[keyCode].m_wasPressedLastFrame &&
@@ -248,6 +282,66 @@ void InputSystem::SaveCurrentCursorClientPosition()
 	::ScreenToClient(windowHandle, &cursorCoords);
 	m_cursorState.m_cursorClientPosition.x = cursorCoords.x;
 	m_cursorState.m_cursorClientPosition.y = cursorCoords.y;
+}
+
+bool InputSystem::IsGameplayKey(unsigned char keyCode) const
+{
+	// Mouse buttons
+	if (keyCode == VK_LBUTTON || keyCode == VK_RBUTTON || keyCode == VK_MBUTTON)
+		return true;
+
+	// Letter keys A-Z
+	if (keyCode >= 'A' && keyCode <= 'Z')
+		return true;
+
+	// Number keys 0-9
+	if (keyCode >= '0' && keyCode <= '9')
+		return true;
+
+	// Function keys F1-F12
+	if (keyCode >= VK_F1 && keyCode <= VK_F12)
+		return true;
+
+	// Arrow keys
+	if (keyCode >= VK_LEFT && keyCode <= VK_DOWN)
+		return true;
+
+	// Common control keys
+	switch (keyCode)
+	{
+	case VK_SPACE:      // Space
+	case VK_RETURN:     // Enter
+	case VK_BACK:       // Backspace
+	case VK_TAB:        // Tab
+	case VK_ESCAPE:     // Escape
+	case VK_SHIFT:      // Shift (generic)
+	case VK_LSHIFT:     // Left Shift
+	case VK_RSHIFT:     // Right Shift
+	case VK_CONTROL:    // Ctrl (generic)
+	case VK_LCONTROL:   // Left Ctrl
+	case VK_RCONTROL:   // Right Ctrl
+	case VK_MENU:       // Alt (generic)
+	case VK_LMENU:      // Left Alt
+	case VK_RMENU:      // Right Alt
+	case VK_DELETE:     // Delete
+	case VK_INSERT:     // Insert
+	case VK_HOME:       // Home
+	case VK_END:        // End
+	case VK_PRIOR:      // Page Up
+	case VK_NEXT:       // Page Down
+	case VK_OEM_3:      // Tilde `~
+	case VK_OEM_4:      // Left bracket [{
+	case VK_OEM_6:      // Right bracket ]}
+	case VK_OEM_PLUS:   // Plus =+
+	case VK_OEM_MINUS:  // Minus -_
+		return true;
+	}
+
+	// Numpad keys
+	if (keyCode >= VK_NUMPAD0 && keyCode <= VK_DIVIDE)
+		return true;
+
+	return false;
 }
 
 STATIC bool InputSystem::Event_KeyPressed(EventArgs& args)

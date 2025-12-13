@@ -1,9 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugInline|Win32">
+      <Configuration>DebugInline</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugInline|x64">
+      <Configuration>DebugInline</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="FastBreak|Win32">
+      <Configuration>FastBreak</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="FastBreak|x64">
+      <Configuration>FastBreak</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -32,7 +48,20 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -45,7 +74,20 @@
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
@@ -60,13 +102,25 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -74,7 +128,15 @@
     <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|Win32'">
     <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -82,7 +144,15 @@
     <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|x64'">
     <OutDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Temporary\$(ProjectName)_$(PlatformShortName)_$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -94,6 +164,28 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -114,6 +206,31 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -134,6 +251,28 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugInline|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -154,6 +293,31 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalLibraryDirectories>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='FastBreak|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)Code/;$(SolutionDir)../Engine/Code/</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -167,6 +331,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ThirdParty\directx\DDSTextureLoader12.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui_draw.cpp" />
@@ -175,6 +340,11 @@
     <ClCompile Include="..\ThirdParty\imgui\imgui_impl_win32.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\ThirdParty\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\ThirdParty\implot\implot.cpp" />
+    <ClCompile Include="..\ThirdParty\implot\implot_demo.cpp" />
+    <ClCompile Include="..\ThirdParty\implot\implot_items.cpp" />
+    <ClCompile Include="..\ThirdParty\Noise\RawNoise.cpp" />
+    <ClCompile Include="..\ThirdParty\Noise\SmoothNoise.cpp" />
     <ClCompile Include="..\ThirdParty\TinyXML2\tinyxml2.cpp" />
     <ClCompile Include="Audio\AudioSystem.cpp" />
     <ClCompile Include="Core\Clock.cpp" />
@@ -186,6 +356,7 @@
     <ClCompile Include="Core\FileUtils.cpp" />
     <ClCompile Include="Core\HeatMaps.cpp" />
     <ClCompile Include="Core\Image.cpp" />
+    <ClCompile Include="Core\JobSystem.cpp" />
     <ClCompile Include="Core\NamedStrings.cpp" />
     <ClCompile Include="Core\Rgba8.cpp" />
     <ClCompile Include="Core\StaticMeshUtils.cpp" />
@@ -195,6 +366,8 @@
     <ClCompile Include="Core\VertexUtils.cpp" />
     <ClCompile Include="Core\Vertex_PCU.cpp" />
     <ClCompile Include="Core\Vertex_PCUTBN.cpp" />
+    <ClCompile Include="Core\Vertex_PNMD.cpp" />
+    <ClCompile Include="Core\Vertex_Terrain.cpp" />
     <ClCompile Include="Core\XmlUtils.cpp" />
     <ClCompile Include="Input\AnalogJoystick.cpp" />
     <ClCompile Include="Input\InputSystem.cpp" />
@@ -206,15 +379,21 @@
     <ClCompile Include="Math\CubicBezierCurve2D.cpp" />
     <ClCompile Include="Math\EulerAngles.cpp" />
     <ClCompile Include="Math\FloatRange.cpp" />
+    <ClCompile Include="Math\Frustum.cpp" />
     <ClCompile Include="Math\Gradient.cpp" />
+    <ClCompile Include="Math\IntBox3.cpp" />
     <ClCompile Include="Math\IntRange.cpp" />
     <ClCompile Include="Math\IntVec2.cpp" />
+    <ClCompile Include="Math\IntVec3.cpp" />
     <ClCompile Include="Math\LineSegment2.cpp" />
     <ClCompile Include="Math\Mat44.cpp" />
     <ClCompile Include="Math\MathUtils.cpp" />
+    <ClCompile Include="Math\MonotonicCurve.cpp" />
+    <ClCompile Include="Math\MortonCode.cpp" />
     <ClCompile Include="Math\OBB2.cpp" />
     <ClCompile Include="Math\OBB3.cpp" />
     <ClCompile Include="Math\Plane3.cpp" />
+    <ClCompile Include="Math\Quantization.cpp" />
     <ClCompile Include="Math\Quat.cpp" />
     <ClCompile Include="Math\RandomNumberGenerator.cpp" />
     <ClCompile Include="Math\RaycastUtils.cpp" />
@@ -249,6 +428,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ThirdParty\directx\d3dx12.h" />
+    <ClInclude Include="..\ThirdParty\directx\DDSTextureLoader12.h" />
     <ClInclude Include="..\ThirdParty\imgui\imconfig.h" />
     <ClInclude Include="..\ThirdParty\imgui\imgui.h" />
     <ClInclude Include="..\ThirdParty\imgui\imgui_impl_dx11.h" />
@@ -258,13 +438,26 @@
     <ClInclude Include="..\ThirdParty\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\ThirdParty\imgui\imstb_textedit.h" />
     <ClInclude Include="..\ThirdParty\imgui\imstb_truetype.h" />
+    <ClInclude Include="..\ThirdParty\implot\implot.h" />
+    <ClInclude Include="..\ThirdParty\implot\implot_internal.h" />
+    <ClInclude Include="..\ThirdParty\Noise\RawNoise.hpp" />
+    <ClInclude Include="..\ThirdParty\Noise\SmoothNoise.hpp" />
     <ClInclude Include="..\ThirdParty\TinyXML2\tinyxml2.h" />
     <ClInclude Include="Core\Clock.hpp" />
     <ClInclude Include="Core\DebugRender.hpp" />
-    <ClInclude Include="Core\HashCombine.hpp" />
+    <ClInclude Include="Core\HashUtils.hpp" />
+    <ClInclude Include="Core\JobSystem.hpp" />
     <ClInclude Include="Core\StaticMeshUtils.hpp" />
     <ClInclude Include="Core\Timer.hpp" />
     <ClInclude Include="Core\Vertex_PCUTBN.hpp" />
+    <ClInclude Include="Core\Vertex_PNMD.hpp" />
+    <ClInclude Include="Core\Vertex_Terrain.hpp" />
+    <ClInclude Include="Math\Frustum.hpp" />
+    <ClInclude Include="Math\IntBox3.hpp" />
+    <ClInclude Include="Math\IntVec3.hpp" />
+    <ClInclude Include="Math\MonotonicCurve.hpp" />
+    <ClInclude Include="Math\MortonCode.hpp" />
+    <ClInclude Include="Math\Quantization.hpp" />
     <ClInclude Include="Network\NetworkSystem.hpp" />
     <ClInclude Include="Renderer\Buffer.hpp" />
     <ClInclude Include="Renderer\DX11Renderer.hpp" />

@@ -16,6 +16,8 @@ class Gradient
 public:
 	Gradient() = default;
 	static Gradient MakeHeatGradient();
+	static Gradient MakeSkyGradient();
+	static Gradient MakeSkyAmbientLightGradient();
 
 	void SetKeys(const std::vector<GradientRgba8Key>& keys);
 

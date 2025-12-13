@@ -12,6 +12,7 @@ extern unsigned char const KEYCODE_ENTER;
 
 extern unsigned char const KEYCODE_LEFT_MOUSE;
 extern unsigned char const KEYCODE_RIGHT_MOUSE;
+extern unsigned char const KEYCODE_MIDDLE_MOUSE;
 
 extern unsigned char const KEYCODE_TILDE;
 extern unsigned char const KEYCODE_LEFTBRACKET;
@@ -118,6 +119,11 @@ public:
 	void EndFrame();
 	void Shutdown();
 
+	// Input detection for device switching
+	bool HasAnyKeyboardMouseInput() const;
+	bool HasMouseMoved() const;
+	bool HasAnyControllerInput(int controllerID) const;
+
 	bool WasKeyJustPressed(unsigned char keyCode) const;
 	bool WasKeyJustReleased(unsigned char keyCode) const;
 	bool IsKeyDown(unsigned char keyCode) const;
@@ -148,6 +154,8 @@ public:
 	void SaveCurrentCursorClientPosition();
 
 protected:
+	bool IsGameplayKey(unsigned char keyCode) const;
+
 	static bool Event_KeyPressed(EventArgs& args);
 	static bool Event_KeyReleased(EventArgs& args);
 
@@ -160,3 +168,123 @@ protected:
 	CursorState m_cursorState;
 };
 
+
+//-----------------------------------------------------------------------------------------------
+/*
+// Example 1: Detect Input Device Switch
+void Game::DetectInputDevice()
+{
+	bool hasKeyboardMouse = g_theInput->HasAnyKeyboardMouseInput() ||
+							g_theInput->HasMouseMoved();
+
+	bool hasGamepad = g_theInput->HasAnyControllerInput(0);
+
+	if (hasKeyboardMouse)
+	{
+		// Switch to KeyBoard&Mouse UI (WASD, Mouse Icon)
+		m_currentDevice = KEYBOARD_MOUSE;
+	}
+	else if (hasGamepad)
+	{
+		// Switch to Gamepad UI (Show A/B/X/Y Icon)
+		m_currentDevice = GAMEPAD;
+	}
+}
+
+// Example 2: Only pause the timer when player has input
+void Game::UpdateIdleTimer(float deltaSeconds)
+{
+	bool hasInput = g_theInput->HasAnyKeyboardMouseInput() ||
+					g_theInput->HasMouseMoved() ||
+					g_theInput->HasAnyControllerInput(0);
+
+	if (hasInput)
+	{
+		m_idleTimer = 0.0f;
+	}
+	else
+	{
+		m_idleTimer += deltaSeconds;
+		if (m_idleTimer > 300.0f) // 5 mins no input operation
+		{
+			ShowScreensaver();
+		}
+	}
+}
+
+
+```cpp
+class Game
+{
+private:
+	enum class InputDevice
+	{
+		KEYBOARD_MOUSE,
+		GAMEPAD
+	};
+
+	InputDevice m_currentInputDevice = InputDevice::KEYBOARD_MOUSE;
+
+public:
+	void Update(float deltaSeconds)
+	{
+		DetectInputDevice();
+
+		UpdateUIForCurrentDevice();
+	}
+
+	void DetectInputDevice()
+	{
+		bool hasKeyboardMouseInput = g_theInput->HasAnyKeyboardMouseInput() ||
+									 g_theInput->HasMouseMoved();
+
+		bool hasGamepadInput = false;
+		for (int i = 0; i < NUM_XBOX_CONTROLLERS; ++i)
+		{
+			if (g_theInput->HasAnyControllerInput(i))
+			{
+				hasGamepadInput = true;
+				break;
+			}
+		}
+
+		if (hasKeyboardMouseInput && m_currentInputDevice != InputDevice::KEYBOARD_MOUSE)
+		{
+			m_currentInputDevice = InputDevice::KEYBOARD_MOUSE;
+			OnInputDeviceChanged();
+		}
+		else if (hasGamepadInput && m_currentInputDevice != InputDevice::GAMEPAD)
+		{
+			m_currentInputDevice = InputDevice::GAMEPAD;
+			OnInputDeviceChanged();
+		}
+	}
+
+	void OnInputDeviceChanged()
+	{
+
+		if (m_currentInputDevice == InputDevice::KEYBOARD_MOUSE)
+		{
+			// [W][A][S][D], [LMB], etc.
+			DebuggerPrintf("Switched to Keyboard & Mouse\n");
+		}
+		else
+		{
+			// [A], [B], [X], [Y], etc.
+			DebuggerPrintf("Switched to Gamepad\n");
+		}
+	}
+
+	void UpdateUIForCurrentDevice()
+	{
+		if (m_currentInputDevice == InputDevice::KEYBOARD_MOUSE)
+		{
+			// "Press [E] to interact"
+		}
+		else
+		{
+			// "Press [A] to interact"
+		}
+	}
+};
+*/

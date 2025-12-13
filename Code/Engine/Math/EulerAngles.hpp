@@ -15,7 +15,11 @@ public:
 	Mat44 GetAsMatrix_IFwd_JLeft_KUp() const;
 
 	// Mutators (non-const methods)
-	void		SetFromText(char const* text);
+	void	SetFromText(char const* text);
+	void	Normalize();
+
+	static float ClampAxis(float degrees);
+	static float NormalizeAxis(float degrees);
 
 public:
 	float m_yawDegrees = 0.f;

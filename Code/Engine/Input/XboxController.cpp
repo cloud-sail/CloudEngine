@@ -129,3 +129,31 @@ void XboxController::UpdateButton(XboxButtonId buttonID, unsigned short wButtons
 	m_buttons[static_cast<int>(buttonID)].m_wasPressedLastFrame = m_buttons[static_cast<int>(buttonID)].m_isPressed;
 	m_buttons[static_cast<int>(buttonID)].m_isPressed = isKeyDownThisFrame;
 }
+
+bool XboxController::HasAnyButtonPressed() const
+{
+	for (int i = 0; i < static_cast<int>(XboxButtonId::NUM_XBOX_BUTTONS); ++i)
+	{
+		if (m_buttons[i].m_isPressed)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool XboxController::HasAnyStickMoved() const
+{
+	return m_leftStick.GetMagnitude() > 0.0f || m_rightStick.GetMagnitude() > 0.0f;
+}
+
+bool XboxController::HasAnyTriggerPressed(float threshold) const
+{
+	return m_leftTrigger > threshold || m_rightTrigger > threshold;
+}
+
+bool XboxController::HasAnyInput() const
+{
+	return HasAnyButtonPressed() || HasAnyStickMoved() || HasAnyTriggerPressed();
+}
+

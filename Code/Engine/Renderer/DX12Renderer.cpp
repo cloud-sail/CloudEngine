@@ -23,6 +23,9 @@
 #include "Engine/Renderer/DX12PipelineState.hpp"
 #include "Engine/Renderer/DX12DeferredReleaseQueue.hpp"
 
+#include <filesystem>
+#include <memory>
+
 //-----------------------------------------------------------------------------------------------
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -42,11 +45,13 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include "ThirdParty/directx/d3dx12.h"
+#include "ThirdParty/directx/DDSTextureLoader12.h"
 
 
 #include "ThirdParty/imgui/imgui.h"
 #include "ThirdParty/imgui/imgui_impl_win32.h"
 #include "ThirdParty/imgui/imgui_impl_dx12.h"
+#include "ThirdParty/implot/implot.h"
 
 
 #pragma comment(lib, "d3dcompiler.lib")
@@ -121,7 +126,17 @@ struct ExampleDescriptorHeapAllocator
 static ExampleDescriptorHeapAllocator g_ImGuiSrvDescHeapAlloc;
 
 
+bool IsDDSFile(const char* filePath) 
+{
+	std::filesystem::path path(filePath);
+	std::string extension = path.extension().string();
 
+	for (auto& c : extension) {
+		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+	}
+
+	return extension == ".dds";
+}
 
 
 
@@ -138,7 +153,7 @@ DX12Renderer::DX12Renderer(RendererConfig const& config)
 void DX12Renderer::Startup()
 {
 	DX12Graphics::InitializeCommonState();
-	m_deferredReleaseQueue = new DX12DeferredReleaseQueue();
+	m_deferredReleaseQueue = new DX12DeferredReleaseQueue(m_config.m_maxResourceReleasesPerFrame);
 
 	CreateDevice();
 	CreateFenceAndHandle();
@@ -447,6 +462,35 @@ void DX12Renderer::BeginCamera(Camera const& camera)
 	SetScissor(scissorRect);
 }
 
+void DX12Renderer::BeginCamera(Camera const& camera, Vec2 const& targetSize)
+{
+	SetModelConstants();
+
+	// Set Camera Constants
+	CameraConstants cameraConstants;
+	cameraConstants.WorldToCameraTransform = camera.GetWorldToCameraTransform();
+	cameraConstants.CameraToRenderTransform = camera.GetCameraToRenderTransform();
+	cameraConstants.RenderToClipTransform = camera.GetRenderToClipTransform();
+	cameraConstants.CameraWorldPosition = camera.GetPosition();
+	cameraConstants.ClipToWorldTransform = camera.GetClipToWorldTransform();
+
+	m_tempCameraConstantsIndex = AllocateTempConstantBuffer(sizeof(CameraConstants), &cameraConstants);
+
+	D3D12_VIEWPORT viewport = {};
+	viewport.TopLeftX = 0.f;
+	viewport.TopLeftY = 0.f;
+	viewport.Width = targetSize.x;
+	viewport.Height = targetSize.y;
+	viewport.MinDepth = 0.f;
+	viewport.MaxDepth = 1.f;
+
+	D3D12_RECT scissorRect = CD3DX12_RECT(0, 0,
+		(LONG)targetSize.x, (LONG)targetSize.y);
+
+	SetViewport(viewport);
+	SetScissor(scissorRect);
+}
+
 void DX12Renderer::EndCamera(Camera const& camera)
 {
 	// DO nothing for now
@@ -553,6 +597,83 @@ void DX12Renderer::DrawProcedural(unsigned int vertexCount)
 	m_desiredGraphicsPSO->Finalize();
 	SetPipelineState(*m_desiredGraphicsPSO);
 	Draw(vertexCount);
+}
+
+void DX12Renderer::DrawProceduralInstanced(unsigned int vertexCountPerInstance, unsigned int instanceCount)
+{
+	m_commandList->IASetVertexBuffers(0, 0, nullptr);
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawInstanced(vertexCountPerInstance, instanceCount, 0, 0);
+}
+
+void DX12Renderer::DrawVertexBufferInstanced(VertexBuffer* vbo, unsigned int vertexCountPerInstance, unsigned int instanceCount)
+{
+	SetVertexBuffer(0, vbo->GetVertexBufferView());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawInstanced(vertexCountPerInstance, instanceCount, 0, 0);
+}
+
+void DX12Renderer::DrawIndexedVertexBufferInstanced(VertexBuffer* vbo, IndexBuffer* ibo, unsigned int indexCountPerInstance, unsigned int instanceCount)
+{
+	SetVertexBuffer(0, vbo->GetVertexBufferView());
+	SetIndexBuffer(ibo->GetIndexBufferView());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawIndexedInstanced(indexCountPerInstance, instanceCount, 0, 0, 0);
+}
+
+void DX12Renderer::DrawVertexArrayInstanced(std::vector<Vertex_PCU> const& verts, unsigned int instanceCount)
+{
+	SetDynamicVertexBuffer(0, verts.size(), sizeof(Vertex_PCU), verts.data());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawInstanced((unsigned int)verts.size(), instanceCount, 0, 0);
+}
+
+void DX12Renderer::DrawVertexArrayInstanced(std::vector<Vertex_PCUTBN> const& verts, unsigned int instanceCount)
+{
+	SetDynamicVertexBuffer(0, verts.size(), sizeof(Vertex_PCUTBN), verts.data());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawInstanced((unsigned int)verts.size(), instanceCount, 0, 0);
+}
+
+void DX12Renderer::DrawIndexedVertexArrayInstanced(std::vector<Vertex_PCU> const& verts, std::vector<unsigned int> const& indexes, unsigned int instanceCount)
+{
+	SetDynamicVertexBuffer(0, verts.size(), sizeof(Vertex_PCU), verts.data());
+	SetDynamicIndexBuffer(indexes.size(), indexes.data());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawIndexedInstanced((unsigned int)indexes.size(), instanceCount, 0, 0, 0);
+}
+
+void DX12Renderer::DrawIndexedVertexArrayInstanced(std::vector<Vertex_PCUTBN> const& verts, std::vector<unsigned int> const& indexes, unsigned int instanceCount)
+{
+	SetDynamicVertexBuffer(0, verts.size(), sizeof(Vertex_PCUTBN), verts.data());
+	SetDynamicIndexBuffer(indexes.size(), indexes.data());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawIndexedInstanced((unsigned int)indexes.size(), instanceCount, 0, 0, 0);
+}
+
+void DX12Renderer::DrawIndexedProceduralInstanced(IndexBuffer* ibo, unsigned int indexCountPerInstance, unsigned int instanceCount)
+{
+	m_commandList->IASetVertexBuffers(0, 0, nullptr);
+	SetIndexBuffer(ibo->GetIndexBufferView());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawIndexedInstanced(indexCountPerInstance, instanceCount, 0, 0, 0);
+}
+
+void DX12Renderer::DrawIndexedProceduralInstanced(std::vector<unsigned int> const& indexes, unsigned int instanceCount)
+{
+	m_commandList->IASetVertexBuffers(0, 0, nullptr);
+	SetDynamicIndexBuffer(indexes.size(), indexes.data());
+	m_desiredGraphicsPSO->Finalize();
+	SetPipelineState(*m_desiredGraphicsPSO);
+	DrawIndexedInstanced((unsigned int)indexes.size(), instanceCount, 0, 0, 0);
 }
 
 void DX12Renderer::Dispatch1D(unsigned int threadCountX, unsigned int groupSizeX /*= 64*/)
@@ -739,8 +860,18 @@ Texture* DX12Renderer::CreateOrGetTextureFromFile(char const* imageFilePath)
 	{
 		return existingTexture;
 	}
+
+	Texture* newTexture = nullptr;
+	if (IsDDSFile(imageFilePath))
+	{
+		newTexture = CreateDDSTextureFromFile(imageFilePath);
+	}
+	else
+	{
+		newTexture = CreateTextureFromFile(imageFilePath);
+	}
+
 	// Never seen this texture before!  Let's load it.
-	Texture* newTexture = CreateTextureFromFile(imageFilePath);
 	return newTexture;
 }
 
@@ -831,6 +962,192 @@ Texture* DX12Renderer::CreateTextureFromFile(char const* imageFilePath)
 {
 	Image fileImage(imageFilePath);
 	Texture* newTexture = CreateTextureFromImage(fileImage);
+	return newTexture;
+}
+
+Texture* DX12Renderer::CreateDDSTextureFromFile(char const* ddsFilePath)
+{
+	std::wstring wFilePath = ToWString(ddsFilePath);
+
+	// DDS load variables
+	ID3D12Resource* resource = nullptr;
+	std::unique_ptr<uint8_t[]> ddsData;
+	std::vector<D3D12_SUBRESOURCE_DATA> subresources;
+	DirectX::DDS_ALPHA_MODE alphaMode = DirectX::DDS_ALPHA_MODE_UNKNOWN;
+	bool isCubeMap = false;
+
+	// DDSTextureLoader
+	HRESULT hr = DirectX::LoadDDSTextureFromFile(
+		m_device,
+		wFilePath.c_str(),
+		&resource,
+		ddsData,
+		subresources,
+		0,
+		&alphaMode,
+		&isCubeMap
+	);
+
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not load DDS texture file");
+#ifdef _DEBUG
+	resource->SetName(wFilePath.c_str());
+#endif
+
+	// Get Texture Desc
+	D3D12_RESOURCE_DESC textureDesc = resource->GetDesc();
+
+	// Create Upload Heap
+	ID3D12Resource* textureUploadHeap = nullptr;
+	UINT64 uploadBufferSize = GetRequiredIntermediateSize(resource, 0, static_cast<UINT>(subresources.size()));
+
+	D3D12_HEAP_PROPERTIES heapProp = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+	D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
+
+	hr = m_device->CreateCommittedResource(
+		&heapProp,
+		D3D12_HEAP_FLAG_NONE,
+		&bufferDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&textureUploadHeap)
+	);
+
+	GUARANTEE_OR_DIE(SUCCEEDED(hr), "Could not create DDS texture upload heap");
+
+#ifdef _DEBUG
+	textureUploadHeap->SetName(L"DDS Texture upload heap");
+#endif
+
+	// Upload Texture Data
+	UpdateSubresources(
+		m_commandList,
+		resource,
+		textureUploadHeap,
+		0,
+		0,
+		static_cast<UINT>(subresources.size()),
+		subresources.data()
+	);
+
+	// Transition State
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(
+		resource,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+	);
+	m_commandList->ResourceBarrier(1, &barrier);
+
+	// Release Upload Heap
+	EnqueueDeferredRelease(textureUploadHeap);
+
+	// Allocate a SRV Descriptor
+	PersistentDescriptorAlloc alloc = m_cbvSrvUavDescriptorHeap->AllocatePersistent();
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureDesc.Format;
+
+	// Not sure if the view dimension is correct or not, textureDesc ?
+	switch (textureDesc.Dimension)
+	{
+	case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+		if (textureDesc.DepthOrArraySize == 1)
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1D;
+			srvDesc.Texture1D.MipLevels = textureDesc.MipLevels;
+		}
+		else
+		{
+			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE1DARRAY;
+			srvDesc.Texture1DArray.MipLevels = textureDesc.MipLevels;
+			srvDesc.Texture1DArray.ArraySize = textureDesc.DepthOrArraySize;
+		}
+		break;
+
+	case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+		if (isCubeMap)
+		{
+			if (textureDesc.DepthOrArraySize == 6)
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+				srvDesc.TextureCube.MipLevels = textureDesc.MipLevels;
+			}
+			else if (textureDesc.DepthOrArraySize % 6 == 0)
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBEARRAY;
+				srvDesc.TextureCubeArray.MipLevels = textureDesc.MipLevels;
+				srvDesc.TextureCubeArray.NumCubes = textureDesc.DepthOrArraySize / 6;
+			}
+			else
+			{
+				ERROR_AND_DIE("Invalid cubemap array size");
+			}
+		}
+		else
+		{
+			if (textureDesc.DepthOrArraySize == 1)
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+				srvDesc.Texture2D.MipLevels = textureDesc.MipLevels;
+			}
+			else
+			{
+				srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
+				srvDesc.Texture2DArray.MipLevels = textureDesc.MipLevels;
+				srvDesc.Texture2DArray.ArraySize = textureDesc.DepthOrArraySize;
+			}
+		}
+		break;
+
+	case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE3D;
+		srvDesc.Texture3D.MipLevels = textureDesc.MipLevels;
+		break;
+
+	default:
+		ERROR_AND_DIE("Unsupported texture dimension");
+		break;
+	}
+
+	// Create SRVs
+	for (uint32_t i = 0; i < m_cbvSrvUavDescriptorHeap->GetNumHeaps(); ++i)
+	{
+		m_device->CreateShaderResourceView(resource, &srvDesc, alloc.m_handles[i]);
+	}
+
+	Texture* newTexture = new Texture(this);
+	newTexture->m_name = ddsFilePath;
+	newTexture->m_dimensions = IntVec2(static_cast<int>(textureDesc.Width), static_cast<int>(textureDesc.Height));
+	newTexture->m_depth = textureDesc.DepthOrArraySize;
+	newTexture->m_resource = resource;
+	newTexture->m_srvHeapIndex = alloc.m_index; // important
+
+	newTexture->m_mipLevels = textureDesc.MipLevels;
+	newTexture->m_sampleCount = textureDesc.SampleDesc.Count;
+	newTexture->m_sampleQuality = textureDesc.SampleDesc.Quality;
+	newTexture->m_format = textureDesc.Format;
+
+	newTexture->m_supportSRV = true;
+	newTexture->m_currentResourceState = static_cast<unsigned int>(D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+
+	switch (textureDesc.Dimension)
+	{
+	case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+		newTexture->m_resourceDimension = DXResourceDimension::TEXTURE1D;
+		break;
+	case D3D12_RESOURCE_DIMENSION_TEXTURE2D:
+		if (isCubeMap)
+			newTexture->m_resourceDimension = DXResourceDimension::TEXTURECUBE;
+		else
+			newTexture->m_resourceDimension = DXResourceDimension::TEXTURE2D;
+		break;
+	case D3D12_RESOURCE_DIMENSION_TEXTURE3D:
+		newTexture->m_resourceDimension = DXResourceDimension::TEXTURE3D;
+		break;
+	}
+
+	m_loadedTextures.push_back(newTexture);
+
 	return newTexture;
 }
 
@@ -1488,6 +1805,28 @@ void DX12Renderer::CreateDevice()
 	DX_SAFE_RELEASE(adapter);
 
 	s_device = m_device;
+
+#if defined(ENGINE_DEBUG_RENDER)
+	ID3D12InfoQueue* infoQueue = nullptr;
+	if (SUCCEEDED(m_device->QueryInterface(IID_PPV_ARGS(&infoQueue))))
+	{
+		// Break When Error Occurs
+		infoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
+
+		// Filter Unnecessary Warnings
+		D3D12_MESSAGE_ID denyIds[] = {
+			D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+		};
+
+		D3D12_INFO_QUEUE_FILTER filter = {};
+		filter.DenyList.NumIDs = _countof(denyIds);
+		filter.DenyList.pIDList = denyIds;
+		infoQueue->AddStorageFilterEntries(&filter);
+
+		infoQueue->Release();
+	}
+#endif
+
 }
 
 void DX12Renderer::CreateFenceAndHandle()
@@ -1613,7 +1952,7 @@ void DX12Renderer::CreateDescriptorHeaps()
 
 	m_rtvDescriptorHeap = new DX12DescriptorHeap(256, 0, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
 	m_dsvDescriptorHeap = new DX12DescriptorHeap(256, 0, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false);
-	m_cbvSrvUavDescriptorHeap = new DX12DescriptorHeap(2048, 2048, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	m_cbvSrvUavDescriptorHeap = new DX12DescriptorHeap(900000, 90000, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	m_samplerDescriptorHeap = new DX12DescriptorHeap(256, 0, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, true);
 
 	m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -2010,7 +2349,7 @@ void DX12Renderer::InitializeDefaultShaderAndTexture()
 	m_defaultTextures[(int)DefaultTexture::WhiteOpaque2D] = CreateTextureFromImage(Image(IntVec2(2, 2), Rgba8::OPAQUE_WHITE, "WhiteOpaque2D"));
 	m_defaultTextures[(int)DefaultTexture::DefaultNormalMap] = CreateTextureFromImage(Image(IntVec2(2, 2), Rgba8(127, 127, 255, 255), "DefaultNormalMap"));
 	m_defaultTextures[(int)DefaultTexture::DefaultSpecGlossEmitMap] = CreateTextureFromImage(Image(IntVec2(2, 2), Rgba8(127, 127, 0, 255), "DefaultSpecGlossEmitMap"));
-	m_defaultTextures[(int)DefaultTexture::DefaultOcclusionRoughnessMetalnessMap] = CreateTextureFromImage(Image(IntVec2(2, 2), Rgba8(255, 127, 0, 255), "DefaultOcclusionRoughnessMetalnessMap"));
+	m_defaultTextures[(int)DefaultTexture::DefaultORMHMap] = CreateTextureFromImage(Image(IntVec2(2, 2), Rgba8(255, 127, 0, 127), "DefaultORMHMap"));
 
 	{
 		Image checkerBoard(IntVec2(2, 2), Rgba8(0, 0, 0, 255), "CheckerboardMagentaBlack2D");
@@ -2374,6 +2713,16 @@ void DX12Renderer::ClearDepthAndStencilByIndex(uint32_t dsvIndex, float clearDep
 	ClearDepthAndStencil(m_dsvDescriptorHeap->CPUHandleFromIndex(dsvIndex), clearDepth, clearStencil);
 }
 
+uint32_t DX12Renderer::GetCurrentBackBufferIndex() const
+{
+	return m_swapChainBufferHandles[m_currBackBuffer].m_index;
+}
+
+uint32_t DX12Renderer::GetDefaultDepthBufferIndex() const
+{
+	return m_defaultDepthBufferHandle.m_index;
+}
+
 void DX12Renderer::SetGraphicsBindlessResources(size_t resourceSizeInBytes, const void* pResource)
 {
 	GUARANTEE_OR_DIE(resourceSizeInBytes % 4 == 0, "Resource struct is wrong");
@@ -2549,7 +2898,7 @@ void DX12Renderer::DestroyTexture(Texture*& texture)
 {
 	if (texture != nullptr)
 	{
-		//EnqueueDeferredRelease(texture->m_resource);
+		// EnqueueDeferredRelease(texture->m_resource); // It is in ~Texture()
 		delete texture;
 		texture = nullptr;
 	}
@@ -3363,9 +3712,11 @@ void DX12Renderer::ImGuiStartup()
 	// Setup Dear ImGui context
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	ImPlot::CreateContext();
+
+	//ImGuiIO& io = ImGui::GetIO();
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+	//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -3415,6 +3766,7 @@ void DX12Renderer::ImGuiShutdown()
 {
 	ImGui_ImplDX12_Shutdown();
 	ImGui_ImplWin32_Shutdown();
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 }
 

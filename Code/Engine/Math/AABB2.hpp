@@ -17,6 +17,9 @@ public:
 	explicit AABB2(float minX, float minY, float maxX, float maxY);
 	explicit AABB2(Vec2 const& mins, Vec2 const& maxs);
 
+	// Static Makes
+	static AABB2 MakeFromCenter(Vec2 const& center, Vec2 const& halfDimensions);
+
 	// Accessors (const methods)
 	bool		IsPointInside(Vec2 const& point) const;
 	Vec2 const	GetCenter() const;

@@ -39,12 +39,15 @@ void EventSystem::EndFrame()
 
 void EventSystem::SubscribeEventCallbackFunction(std::string const& eventName, EventCallbackFunction* functionPtr)
 {
+	std::unique_lock<std::shared_mutex> lock(m_subscriptionMutex);
 	SubscriptionList& subscriptionList = m_subscriptionListByEventName[eventName];
 	subscriptionList.emplace_back(functionPtr);
 }
 
 void EventSystem::UnsubscribeEventCallbackFunction(std::string const& eventName, EventCallbackFunction* functionPtr)
 {
+	std::unique_lock<std::shared_mutex> lock(m_subscriptionMutex);
+
 	auto found = m_subscriptionListByEventName.find(eventName);
 	if (found == m_subscriptionListByEventName.end())
 	{
@@ -77,41 +80,77 @@ void EventSystem::UnsubscribeEventCallbackFunction(std::string const& eventName,
 
 void EventSystem::FireEvent(std::string const& eventName, EventArgs& args)
 {
-	auto found = m_subscriptionListByEventName.find(eventName);
-	if (found == m_subscriptionListByEventName.end())
+	SubscriptionList localCopy;
+	bool foundSubscribers = false;
+
+	{
+		std::shared_lock<std::shared_mutex> lock(m_subscriptionMutex);
+		auto found = m_subscriptionListByEventName.find(eventName);
+		if (found != m_subscriptionListByEventName.end())
+		{
+			localCopy = found->second;
+			foundSubscribers = true;
+		}
+	} // Release Lock
+
+	if (!foundSubscribers)
 	{
 		if (g_theDevConsole)
 		{
 			g_theDevConsole->AddText(DevConsole::ERROR, "Unknown Command: " + eventName + ". Type Help for commands.");
 		}
-		return; // nobody subscribed to this event (return int(0))
+		return;
 	}
 
-	// Found a list of subscribers for this event; call each one in turn (or until someone "consumes" the event)
-	SubscriptionList& subscribersForThisEvent = found->second;
-	int numSubscribers = static_cast<int>(subscribersForThisEvent.size());
+	int numSubscribers = static_cast<int>(localCopy.size());
 	for (int i = 0; i < numSubscribers; ++i)
 	{
-		//EventSubscription* subscriber = subscribersForThisEvent[i];
-		//if (subscriber)
-		//{
-		//	bool wasConsumed = subscriber->m_functionPtr(args); // Execute the subscriber's callback function!
-		//	if (wasConsumed)
-		//	{
-		//		break; // Event was "consumed" by this subscriber; stop notifying any other subscribers!
-		//	}
-		//}
-		EventSubscription& subscriber = subscribersForThisEvent[i];
+		EventSubscription& subscriber = localCopy[i];
 		if (subscriber.m_functionPtr)
 		{
-			bool wasConsumed = subscriber.m_functionPtr(args); // Execute the subscriber's callback function!
+			bool wasConsumed = subscriber.m_functionPtr(args);
 			if (wasConsumed)
 			{
 				break; // Event was "consumed" by this subscriber; stop notifying any other subscribers!
 			}
 		}
 	}
-	// return numSubscribers;
+
+	//auto found = m_subscriptionListByEventName.find(eventName);
+	//if (found == m_subscriptionListByEventName.end())
+	//{
+	//	if (g_theDevConsole)
+	//	{
+	//		g_theDevConsole->AddText(DevConsole::ERROR, "Unknown Command: " + eventName + ". Type Help for commands.");
+	//	}
+	//	return; // nobody subscribed to this event (return int(0))
+	//}
+
+	//// Found a list of subscribers for this event; call each one in turn (or until someone "consumes" the event)
+	//SubscriptionList& subscribersForThisEvent = found->second;
+	//int numSubscribers = static_cast<int>(subscribersForThisEvent.size());
+	//for (int i = 0; i < numSubscribers; ++i)
+	//{
+	//	//EventSubscription* subscriber = subscribersForThisEvent[i];
+	//	//if (subscriber)
+	//	//{
+	//	//	bool wasConsumed = subscriber->m_functionPtr(args); // Execute the subscriber's callback function!
+	//	//	if (wasConsumed)
+	//	//	{
+	//	//		break; // Event was "consumed" by this subscriber; stop notifying any other subscribers!
+	//	//	}
+	//	//}
+	//	EventSubscription& subscriber = subscribersForThisEvent[i];
+	//	if (subscriber.m_functionPtr)
+	//	{
+	//		bool wasConsumed = subscriber.m_functionPtr(args); // Execute the subscriber's callback function!
+	//		if (wasConsumed)
+	//		{
+	//			break; // Event was "consumed" by this subscriber; stop notifying any other subscribers!
+	//		}
+	//	}
+	//}
+	//// return numSubscribers;
 }
 
 void EventSystem::FireEvent(std::string const& eventName)
@@ -124,6 +163,8 @@ void EventSystem::FireEvent(std::string const& eventName)
 
 void EventSystem::GetAllRegistedCommands(Strings& outCommandNames) const
 {
+	std::shared_lock<std::shared_mutex> lock(m_subscriptionMutex);
+
 	outCommandNames.clear();
 	outCommandNames.reserve(m_subscriptionListByEventName.size());
 

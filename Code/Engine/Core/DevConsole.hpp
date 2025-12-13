@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <atomic>
+#include <mutex>
+#include <shared_mutex>
 
 //-----------------------------------------------------------------------------------------------
 class BitmapFont;
@@ -70,6 +73,7 @@ public:
 	bool IsEmpty() const;
 
 private:
+	mutable std::mutex m_mutex;
 	std::vector<std::string> m_data;
 	int m_start = 0;
 	int m_end = 0;
@@ -138,8 +142,11 @@ protected:
 protected:
 	DevConsoleConfig m_config;
 	// only when opened it can accept input.
-	DevConsoleMode m_mode = DevConsoleMode::HIDDEN;
+	std::atomic<DevConsoleMode> m_mode{ DevConsoleMode::HIDDEN };
+
+	mutable std::shared_mutex m_linesMutex;
 	std::vector<DevConsoleLine> m_lines; // #ToDo: support a max limited # of lines (e.g. fixed circular buffer)
+	
 	int m_frameNumber = 0; // what? not used now
 
 	std::string m_fontFilePathWithoutExtension;
@@ -162,5 +169,17 @@ protected:
 
 	// Our current index in our history of commands as we are scrolling.
 	int m_historyIndex = -1;
+
+	// Multi threading:
+	// m_historyIndex: only changed in Event KeyPressed, safe
+	// m_inputText: only changed in Event KeyPressed & CharInput, safe
+	// m_insertionPointPosition: only changed in Event KeyPressed & CharInput, safe
+	// m_fontFilePathWithoutExtension: on construction and render, safe
+	// m_config: on construction, safe
+	// m_insertionPointBlinkTimer: Only in main thread, safe
+	// 
+	// m_mode: Set/Get/ToggleMode, protected by atomic
+	// m_commandHistory: Write: SaveHistoryCommandLine and Read by Event KeyPressed
+	// m_lines: Read Heavily By Render, Write: Clear Command, AddText/Execute->SaveLine
 };
 

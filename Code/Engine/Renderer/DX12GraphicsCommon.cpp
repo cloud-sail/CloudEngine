@@ -58,6 +58,22 @@ const CD3DX12_STATIC_SAMPLER_DESC g_staticSamplers[] =
 		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
 		0.0f,
 		8),
+
+	// s6: pointMipLinearWrap
+	CD3DX12_STATIC_SAMPLER_DESC(
+		6,									// shaderRegister
+		D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR,	// filter
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_WRAP),	// addressW
+
+	// s7: pointMipLinearClamp
+	CD3DX12_STATIC_SAMPLER_DESC(
+		7,									// shaderRegister
+		D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR,	// filter
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressU
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP,	// addressV
+		D3D12_TEXTURE_ADDRESS_MODE_CLAMP),	// addressW
 };
 
 const size_t g_numStaticSamplers = sizeof(g_staticSamplers) / sizeof(CD3DX12_STATIC_SAMPLER_DESC);
@@ -137,11 +153,15 @@ D3D12_RESOURCE_DIMENSION ToDX12Dimension(DXResourceDimension dimension)
 {
 	switch (dimension)
 	{
-	case DXResourceDimension::BUFFER:		return D3D12_RESOURCE_DIMENSION_BUFFER;
-	case DXResourceDimension::TEXTURE1D:	return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
-	case DXResourceDimension::TEXTURE2D:	return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	case DXResourceDimension::TEXTURE3D:	return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
-	default:								return D3D12_RESOURCE_DIMENSION_UNKNOWN;
+	case DXResourceDimension::BUFFER:           return D3D12_RESOURCE_DIMENSION_BUFFER;
+	case DXResourceDimension::TEXTURE1D:        return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+	case DXResourceDimension::TEXTURE1DARRAY:   return D3D12_RESOURCE_DIMENSION_TEXTURE1D;
+	case DXResourceDimension::TEXTURE2D:        return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	case DXResourceDimension::TEXTURE2DARRAY:   return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	case DXResourceDimension::TEXTURECUBE:      return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	case DXResourceDimension::TEXTURECUBEARRAY: return D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	case DXResourceDimension::TEXTURE3D:        return D3D12_RESOURCE_DIMENSION_TEXTURE3D;
+	default:                                    return D3D12_RESOURCE_DIMENSION_UNKNOWN;
 	}
 }
 

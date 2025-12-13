@@ -18,6 +18,8 @@ struct OBB2;
 struct OBB3;
 struct Plane3;
 struct Mat44;
+struct Frustum;
+struct Quat;
 
 //-----------------------------------------------------------------------------------------------
 enum class BillboardType
@@ -48,6 +50,13 @@ float	GetFractionWithinRange(float value, float rangeStart, float rangeEnd);
 float	RangeMap(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 float	RangeMapClamped(float inValue, float inStart, float inEnd, float outStart, float outEnd);
 int		RoundDownToInt(float value);
+
+float	InterpTo(float current, float target, float deltaTime, float interpSpeed);
+Vec2	InterpTo(Vec2 const& current, Vec2 const& target, float deltaTime, float interpSpeed);
+Vec3	InterpTo(Vec3 const& current, Vec3 const& target, float deltaTime, float interpSpeed);
+Quat	InterpTo(Quat const& current, Quat const& target, float deltaTime, float interpSpeed);
+Quat	InterpToNlerp(Quat const& current, Quat const& target, float deltaTime, float interpSpeed);
+
 
 //-----------------------------------------------------------------------------------------------
 // Angle utilities
@@ -107,6 +116,12 @@ bool IsPointInsideCylinderZ3D(Vec3 const& point, Vec2 const& centerXY, FloatRang
 bool IsPointInsideSphere3D(Vec3 const& point, Vec3 sphereCenter, float sphereRadius);
 bool IsPointInsideAABB3D(Vec3 const& point, AABB3 const& box);
 bool IsPointInsideOBB3D(Vec3 const& point, OBB3 const& orientedBox);
+
+bool IsAABBOnOrInFrontOfPlane3D(AABB3 const& box, Plane3 const& plane);
+bool IsPointInsideFrustum(Vec3 const& point, Frustum const& frustum);
+bool IsSphereOnFrustum(Vec3 const& sphereCenter, float sphereRadius, Frustum const& frustum);
+bool IsAABBOnFrustum(AABB3 const& box, Frustum const& frustum);
+bool IsOBBOnFrustum(OBB3 const& orientedBox, Frustum const& frustum);
 
 bool DoDiscsOverlap(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB);
 bool DoSpheresOverlap(Vec3 const& centerA, float radiusA, Vec3 const& centerB, float radiusB);
@@ -230,3 +245,7 @@ float BounceEndBezier5(float t);
 
 //-----------------------------------------------------------------------------------------------
 int Sign(float value);
+
+//-----------------------------------------------------------------------------------------------
+
+

@@ -83,7 +83,7 @@ void IntVec2::RotateMinus90Degrees()
 
 IntVec2 const IntVec2::operator+(IntVec2 const& vecToAdd) const
 {
-	return IntVec2(x + vecToAdd.x, y + vecToAdd.y);;
+	return IntVec2(x + vecToAdd.x, y + vecToAdd.y);
 }
 
 IntVec2 const IntVec2::operator-(IntVec2 const& vecToSubtract) const

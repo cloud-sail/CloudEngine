@@ -12,6 +12,8 @@ struct Vec2;
 struct Vec3;
 struct Mat44;
 struct AABB2;
+struct Vertex_PCU;
+
 //-----------------------------------------------------------------------------------------------
 enum class DebugRenderMode
 {
@@ -48,6 +50,14 @@ void DebugRenderEndFrame();
 
 // Geometry
 void DebugAddWorldWirePenumbraNoneCull(Vec3 const& center, Vec3 const& fwdNormal, float radius, float penumbraDot,
+	float duration, Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
+	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+
+void DebugAddWorldTriangleList(std::vector<Vertex_PCU> const& verts,
+	float duration, Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
+	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
+
+void DebugAddWorldWireTriangleListNoneCull(std::vector<Vertex_PCU> const& verts,
 	float duration, Rgba8 const& startColor = Rgba8::OPAQUE_WHITE, Rgba8 const& endColor = Rgba8::OPAQUE_WHITE,
 	DebugRenderMode mode = DebugRenderMode::USE_DEPTH);
 

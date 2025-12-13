@@ -43,6 +43,12 @@ public:
 	bool					WasButtonJustPressed(XboxButtonId buttonID) const;
 	bool					WasButtonJustReleased(XboxButtonId buttonID) const;
 
+	// Input detection for device switching
+	bool					HasAnyButtonPressed() const;
+	bool					HasAnyStickMoved() const;
+	bool					HasAnyTriggerPressed(float threshold = 0.1f) const;
+	bool					HasAnyInput() const;
+
 private:
 	void Update();
 	void Reset();

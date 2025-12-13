@@ -386,12 +386,15 @@ STATIC Mat44 const Mat44::MakeFromUnitQuat(Quat q)
 
 STATIC Mat44 const Mat44::MakeFromNonUnitQuat(Quat q)
 {
-	// rotate forward, left, up by q. not normalized. result will be weird
-	Vec3 iBasis = q.RotateVector(Vec3::FORWARD);
-	Vec3 jBasis = q.RotateVector(Vec3::LEFT);
-	Vec3 kBasis = q.RotateVector(Vec3::UP);
+	// 2025/12/02 not sure
+	return MakeFromUnitQuat(q.GetNormalized());
 
-	return Mat44(iBasis, jBasis, kBasis, Vec3::ZERO);
+	// rotate forward, left, up by q. not normalized. result will be weird
+	//Vec3 iBasis = q.RotateVector(Vec3::FORWARD);
+	//Vec3 jBasis = q.RotateVector(Vec3::LEFT);
+	//Vec3 kBasis = q.RotateVector(Vec3::UP);
+
+	//return Mat44(iBasis, jBasis, kBasis, Vec3::ZERO);
 }
 
 //-----------------------------------------------------------------------------------------------
@@ -1079,5 +1082,14 @@ void Mat44::AppendScaleNonUniform3D(Vec3 const& nonUniformScaleXYZ)
 	m_values[Kw] *= nonUniformScaleXYZ.z;
 }
 
+Mat44 Mat44::operator+(Mat44 const& other) const
+{
+	Mat44 result;
+	for (int i = 0; i < 16; ++i)
+	{
+		result.m_values[i] = this->m_values[i] + other.m_values[i];
+	}
+	return result;
+}
 
 

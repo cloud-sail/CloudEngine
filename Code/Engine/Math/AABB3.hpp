@@ -21,6 +21,7 @@ public:
 	bool IsPointInside(Vec3 const& point) const;
 	Vec3 const	GetNearestPoint(Vec3 const& referencePosition) const;
 	Vec3 const	GetCenter() const;
+	Vec3 const	GetDimensions() const;
 	void GetCornerPoints(Vec3* out_eightCornerPositions) const;
 
 	// Mutators (non-const methods)

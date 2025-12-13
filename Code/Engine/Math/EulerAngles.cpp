@@ -51,5 +51,40 @@ void EulerAngles::SetFromText(char const* text)
 	}
 	m_yawDegrees = static_cast<float>(atof(tokens[0].c_str()));
 	m_pitchDegrees = static_cast<float>(atof(tokens[1].c_str()));
-	m_rollDegrees = static_cast<float>(atof(tokens[1].c_str()));
+	m_rollDegrees = static_cast<float>(atof(tokens[2].c_str()));
+}
+
+void EulerAngles::Normalize()
+{
+	m_pitchDegrees = NormalizeAxis(m_pitchDegrees);
+	m_yawDegrees = NormalizeAxis(m_yawDegrees);
+	m_rollDegrees = NormalizeAxis(m_rollDegrees);
+}
+
+float EulerAngles::ClampAxis(float degrees)
+{
+	// returns angle in the range [0, 360)
+	degrees = fmodf(degrees, 360.f);
+
+	if (degrees < 0.f)
+	{
+		// shift to [0, 360) range
+		degrees += 360.f;
+	}
+
+	return degrees;
+}
+
+float EulerAngles::NormalizeAxis(float degrees)
+{
+	// returns angle in the range (-180, 180]
+	degrees = ClampAxis(degrees);
+
+	if (degrees > 180.f)
+	{
+		// shift to (-180, 180]
+		degrees -= 360.f;
+	}
+
+	return degrees;
 }

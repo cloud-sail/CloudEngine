@@ -5,7 +5,7 @@
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Math/EulerAngles.hpp"
 
-
+struct Frustum;
 class Ray3;
 
 class Camera
@@ -60,6 +60,20 @@ public:
 	void SetOrthoView(Vec2 const& bottomLeft, Vec2 const& topRight);
 	Vec2 GetOrthoBottomLeft() const;
 	Vec2 GetOrthoTopRight() const;
+
+#pragma region Frustum
+public:
+	Frustum GetFrustum() const;
+	void DebugDrawFrustum() const;
+
+protected:
+	Frustum GetOrthographicFrustum() const;
+	Frustum GetPerspectiveFrustum() const;
+
+	void DebugDrawPerspectiveFrustum() const;
+	void DebugDrawOrthographicFrustum() const;
+
+#pragma endregion
 
 protected:
 	Mode m_mode = eMode_Orthographic;

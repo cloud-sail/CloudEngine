@@ -1,4 +1,5 @@
 #include "Engine/Math/Vec3.hpp"
+#include "Engine/Math/IntVec3.hpp"
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Core/EngineCommon.hpp"
@@ -37,6 +38,14 @@ Vec3::Vec3(const Vec2& vec2, float initialZ /*= 0.f*/)
 	, y(vec2.y)
 	, z(initialZ)
 {
+}
+
+Vec3::Vec3(IntVec3 const& vec)
+	: x(static_cast<float>(vec.x))
+	, y(static_cast<float>(vec.y))
+	, z(static_cast<float>(vec.z))
+{
+
 }
 
 STATIC Vec3 const Vec3::MakeFromPolarRadians(float pitchRadians, float yawRadians, float length /*= 1.f*/)
@@ -189,6 +198,11 @@ Vec3 const Vec3::operator*(Vec3 const& vecToMultiply) const
 }
 
 
+Vec3 Vec3::GetAbs() const
+{
+	return Vec3(fabsf(x), fabsf(y), fabsf(z));
+}
+
 //-----------------------------------------------------------------------------------------------
 Vec3 const Vec3::operator/(float inverseScale) const
 {
@@ -196,6 +210,11 @@ Vec3 const Vec3::operator/(float inverseScale) const
 	return Vec3(x * uniformScale, y * uniformScale, z * uniformScale);
 }
 
+
+Vec3 const Vec3::operator/(Vec3 const& vecToDivide) const
+{
+	return Vec3(x / vecToDivide.x, y / vecToDivide.y, z / vecToDivide.z);
+}
 
 //-----------------------------------------------------------------------------------------------
 void Vec3::operator+=(Vec3 const& vecToAdd)

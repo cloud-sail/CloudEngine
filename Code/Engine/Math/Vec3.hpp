@@ -2,6 +2,7 @@
 
 //-----------------------------------------------------------------------------------------------
 struct Vec2;
+struct IntVec3;
 
 //-----------------------------------------------------------------------------------------------
 struct Vec3
@@ -30,6 +31,7 @@ public:
 	Vec3(Vec3 const& copyFrom);								// copy constructor (from another vec3)
 	explicit Vec3(const Vec2& vec2, float initialZ = 0.f);
 	explicit Vec3(float initialX, float initialY, float initialZ);			// explicit constructor (from x, y, z)
+	explicit Vec3(IntVec3 const& vec);						// explicit constructor (from IntVec3)
 
 	// Static methods (e.g. creation functions, like a generator/factory)
 	static Vec3 const MakeFromPolarRadians(float pitchRadians, float yawRadians, float length = 1.f);
@@ -59,6 +61,7 @@ public:
 	Vec3 const	operator-() const;							// -vec3, i.e. "unary negation"
 	Vec3 const	operator*(float uniformScale) const;		// vec3 * float
 	Vec3 const	operator*(Vec3 const& vecToMultiply) const;	// vec3 * vec3
+	Vec3 const	operator/(Vec3 const& vecToDivide) const;	// vec3 / vec3
 	Vec3 const	operator/(float inverseScale) const;		// vec3 / float
 
 	// Operators (self-mutating / non-const)
@@ -70,6 +73,12 @@ public:
 
 	// Standalone "friend" functions that are conceptually, but not actually, part of Vec3::
 	friend Vec3 const operator*(float uniformScale, Vec3 const& vecToScale);	// float * vec3
+
+	// Swizzle
+	Vec3 YZX() const { return Vec3(y, z, x); }
+	Vec3 ZXY() const { return Vec3(z, x, y); }
+
+	Vec3 GetAbs() const;
 };
 
 

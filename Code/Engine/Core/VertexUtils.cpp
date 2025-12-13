@@ -572,6 +572,33 @@ void AddVertsForAABB3D(std::vector<Vertex_PCU>& verts, AABB3 const& bounds, Rgba
 	AddVertsForQuad3D(verts, npn, ppn, pnn, nnn, color, UVs); // -z
 }
 
+void AddVertsForAABB3D(std::vector<Vertex_PCU>& verts, std::vector<unsigned int>& indexes, AABB3 const& bounds, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, AABB2 const& UVs /*= AABB2::ZERO_TO_ONE*/)
+{
+	float minX = bounds.m_mins.x;
+	float minY = bounds.m_mins.y;
+	float minZ = bounds.m_mins.z;
+	float maxX = bounds.m_maxs.x;
+	float maxY = bounds.m_maxs.y;
+	float maxZ = bounds.m_maxs.z;
+
+	// p-max n-min
+	Vec3 nnn(minX, minY, minZ);
+	Vec3 nnp(minX, minY, maxZ);
+	Vec3 npn(minX, maxY, minZ);
+	Vec3 npp(minX, maxY, maxZ);
+	Vec3 pnn(maxX, minY, minZ);
+	Vec3 pnp(maxX, minY, maxZ);
+	Vec3 ppn(maxX, maxY, minZ);
+	Vec3 ppp(maxX, maxY, maxZ);
+
+	AddVertsForQuad3D(verts, indexes, pnn, ppn, ppp, pnp, color, UVs); // +x
+	AddVertsForQuad3D(verts, indexes, npn, nnn, nnp, npp, color, UVs); // -x
+	AddVertsForQuad3D(verts, indexes, ppn, npn, npp, ppp, color, UVs); // +y
+	AddVertsForQuad3D(verts, indexes, nnn, pnn, pnp, nnp, color, UVs); // -y
+	AddVertsForQuad3D(verts, indexes, nnp, pnp, ppp, npp, color, UVs); // +z
+	AddVertsForQuad3D(verts, indexes, npn, ppn, pnn, nnn, color, UVs); // -z
+}
+
 void AddVertsForAABB3D(std::vector<Vertex_PCUTBN>& verts, std::vector<unsigned int>& indexes, AABB3 const& bounds, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, AABB2 const& UVs /*= AABB2::ZERO_TO_ONE*/)
 {
 	float minX = bounds.m_mins.x;
@@ -1071,6 +1098,249 @@ void AddVertsForPenumbra3D(std::vector<Vertex_PCU>& verts, Vec3 const& position,
 		verts.push_back(Vertex_PCU(start, color, Vec2::ZERO));
 		verts.push_back(Vertex_PCU(BL, color, Vec2::ZERO));
 		verts.push_back(Vertex_PCU(BR, color, Vec2::ZERO));
+	}
+}
+
+void AddVertsForRing3D(std::vector<Vertex_PCU>& verts, Vec3 const& bottomCenter, Vec3 const& topCenter, float innerRadius, float thickness, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, AABB2 const& UVs /*= AABB2::ZERO_TO_ONE*/, int numSlices /*= 8*/)
+{
+	float const DEGREES_PER_SLICE = 360.f / static_cast<float>(numSlices);
+	float outerRadius = innerRadius + thickness;
+
+	Mat44 localSpace = Mat44::MakeFromX(topCenter - bottomCenter);
+	Vec3 iBasis = localSpace.GetIBasis3D();
+	Vec3 jBasis = localSpace.GetJBasis3D();
+	Vec3 kBasis = localSpace.GetKBasis3D();
+
+	for (int i = 0; i < numSlices; ++i)
+	{
+		float firstDegrees = i * DEGREES_PER_SLICE;
+		float secondDegrees = (i + 1) * DEGREES_PER_SLICE;
+
+		Vec3 firstInnerOffset = jBasis * innerRadius * CosDegrees(firstDegrees) + kBasis * innerRadius * SinDegrees(firstDegrees);
+		Vec3 secondInnerOffset = jBasis * innerRadius * CosDegrees(secondDegrees) + kBasis * innerRadius * SinDegrees(secondDegrees);
+
+		Vec3 firstOuterOffset = jBasis * outerRadius * CosDegrees(firstDegrees) + kBasis * outerRadius * SinDegrees(firstDegrees);
+		Vec3 secondOuterOffset = jBasis * outerRadius * CosDegrees(secondDegrees) + kBasis * outerRadius * SinDegrees(secondDegrees);
+
+		// (Bottom Inner/Outer Left/Right)
+		Vec3 BI1 = bottomCenter + firstInnerOffset;
+		Vec3 BI2 = bottomCenter + secondInnerOffset;
+		Vec3 BO1 = bottomCenter + firstOuterOffset;
+		Vec3 BO2 = bottomCenter + secondOuterOffset;
+
+		// (Top Inner/Outer Left/Right)
+		Vec3 TI1 = topCenter + firstInnerOffset;
+		Vec3 TI2 = topCenter + secondInnerOffset;
+		Vec3 TO1 = topCenter + firstOuterOffset;
+		Vec3 TO2 = topCenter + secondOuterOffset;
+
+		// Bottom Circle (viewed from top, looking down -I axis)
+		AddVertsForQuad3D(verts, BI2, BO2, BO1, BI1, color, UVs);
+
+		// Top Circle (viewed from top, looking down +I axis)
+		AddVertsForQuad3D(verts, TI1, TO1, TO2, TI2, color, UVs);
+
+		// Outer Side (viewed from outside)
+		AddVertsForQuad3D(verts, BO1, BO2, TO2, TO1, color, UVs);
+
+		// Inner Side (viewed from inside)
+		AddVertsForQuad3D(verts, BI2, BI1, TI1, TI2, color, UVs);
+	}
+}
+
+void AddVertsForTorusZ3D(std::vector<Vertex_PCU>& verts, float majorRadius, float minorRadius, int numMajorSegments /*= 32*/, int numMinorSegments /*= 8*/, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, AABB2 const& UVs /*= AABB2::ZERO_TO_ONE*/)
+{
+	for (int i = 0; i < numMajorSegments; ++i)
+	{
+		float theta1 = (float)i / (float)numMajorSegments * 360.f;
+		float theta2 = (float)(i + 1) / (float)numMajorSegments * 360.f;
+
+		for (int j = 0; j < numMinorSegments; ++j)
+		{
+			float phi1 = (float)j / (float)numMinorSegments * 360.f;
+			float phi2 = (float)(j + 1) / (float)numMinorSegments * 360.f;
+
+			// Calculate vertex positions - torus in XY plane, hole faces Z
+			Vec3 p1((majorRadius + minorRadius * CosDegrees(phi2)) * CosDegrees(theta1),
+				(majorRadius + minorRadius * CosDegrees(phi2)) * SinDegrees(theta1),
+				minorRadius * SinDegrees(phi2));
+
+			Vec3 p2((majorRadius + minorRadius * CosDegrees(phi1)) * CosDegrees(theta1),
+				(majorRadius + minorRadius * CosDegrees(phi1)) * SinDegrees(theta1),
+				minorRadius * SinDegrees(phi1));
+
+			Vec3 p3((majorRadius + minorRadius * CosDegrees(phi1)) * CosDegrees(theta2),
+				(majorRadius + minorRadius * CosDegrees(phi1)) * SinDegrees(theta2),
+				minorRadius * SinDegrees(phi1));
+
+			Vec3 p4((majorRadius + minorRadius * CosDegrees(phi2)) * CosDegrees(theta2),
+				(majorRadius + minorRadius * CosDegrees(phi2)) * SinDegrees(theta2),
+				minorRadius * SinDegrees(phi2));
+
+			AddVertsForQuad3D(verts, p1, p2, p3, p4, color, UVs);
+		}
+	}
+}
+void AddVertsForCapsule3D(std::vector<Vertex_PCU>& verts, Vec3 const& startPoint, Vec3 const& endPoint, float radius, int numSlices /*= 32*/, int numStacks /*= 16*/, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, AABB2 const& UVs /*= AABB2::ZERO_TO_ONE*/)
+{
+	float const DEGREES_PER_SLICE = 360.f / static_cast<float>(numSlices);
+	float const DEGREES_PER_STACK = 180.f / static_cast<float>(numStacks);
+
+	// Calculate local space for the capsule
+	Mat44 localSpace = Mat44::MakeFromX(endPoint - startPoint);
+	Vec3 iBasis = localSpace.GetIBasis3D();
+	Vec3 jBasis = localSpace.GetJBasis3D();
+	Vec3 kBasis = localSpace.GetKBasis3D();
+
+	// Calculate half stacks for hemisphere
+	int halfStacks = numStacks / 2;
+
+	// UV calculations
+	float const UV_STEP_X = UVs.GetDimensions().x / static_cast<float>(numSlices);
+	float const UV_STEP_Y = UVs.GetDimensions().y / static_cast<float>(numStacks);
+
+	// ==================== Bottom hemisphere (centered at startPoint) ====================
+	std::vector<Vertex_PCU> bottomVertices;
+	bottomVertices.reserve((halfStacks + 1) * (numSlices + 1));
+
+	for (int stackIndex = 0; stackIndex <= halfStacks; stackIndex++)
+	{
+		for (int sliceIndex = 0; sliceIndex <= numSlices; sliceIndex++)
+		{
+			float yawDegrees = static_cast<float>(sliceIndex) * DEGREES_PER_SLICE;
+			// Bottom hemisphere: pitch from -90° to 0°
+			float pitchDegrees = -90.f + static_cast<float>(stackIndex) * DEGREES_PER_STACK;
+
+			// Convert spherical coordinates to Cartesian in local space
+			float cosPitch = CosDegrees(pitchDegrees);
+			float sinPitch = SinDegrees(pitchDegrees);
+			float cosYaw = CosDegrees(yawDegrees);
+			float sinYaw = SinDegrees(yawDegrees);
+
+			// Build position in local coordinate system
+			Vec3 offset = iBasis * (radius * sinPitch) +
+				jBasis * (radius * cosPitch * cosYaw) +
+				kBasis * (radius * cosPitch * sinYaw);
+			Vec3 pos = startPoint + offset;
+
+			float u = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+			float v = static_cast<float>(stackIndex) / static_cast<float>(numStacks);
+			Vec2 uv = UVs.GetPointAtUV(Vec2(u, v));
+
+			bottomVertices.emplace_back(pos, color, uv);
+		}
+	}
+
+	// Add triangles for bottom hemisphere
+	int const STRIDE = (numSlices + 1);
+	for (int stackIndex = 0; stackIndex < halfStacks; stackIndex++)
+	{
+		for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++)
+		{
+			int offset = stackIndex * STRIDE + sliceIndex;
+
+			if (stackIndex == 0)
+			{
+				// Bottom pole - single triangles
+				verts.emplace_back(bottomVertices[offset]);
+				verts.emplace_back(bottomVertices[offset + STRIDE + 1]);
+				verts.emplace_back(bottomVertices[offset + STRIDE]);
+			}
+			else
+			{
+				// Quads for the rest
+				verts.emplace_back(bottomVertices[offset]);
+				verts.emplace_back(bottomVertices[offset + 1]);
+				verts.emplace_back(bottomVertices[offset + STRIDE + 1]);
+
+				verts.emplace_back(bottomVertices[offset]);
+				verts.emplace_back(bottomVertices[offset + STRIDE + 1]);
+				verts.emplace_back(bottomVertices[offset + STRIDE]);
+			}
+		}
+	}
+
+	// ==================== Cylinder middle section ====================
+	for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++)
+	{
+		float firstDegrees = sliceIndex * DEGREES_PER_SLICE;
+		float secondDegrees = (sliceIndex + 1) * DEGREES_PER_SLICE;
+
+		Vec3 firstOffset = jBasis * radius * CosDegrees(firstDegrees) + kBasis * radius * SinDegrees(firstDegrees);
+		Vec3 secondOffset = jBasis * radius * CosDegrees(secondDegrees) + kBasis * radius * SinDegrees(secondDegrees);
+
+		Vec3 BL = startPoint + firstOffset;
+		Vec3 BR = startPoint + secondOffset;
+		Vec3 TL = endPoint + firstOffset;
+		Vec3 TR = endPoint + secondOffset;
+
+		float minX = UVs.m_mins.x + UV_STEP_X * static_cast<float>(sliceIndex);
+		float maxX = minX + UV_STEP_X;
+		float minY = UVs.m_mins.y + UV_STEP_Y * static_cast<float>(halfStacks);
+		float maxY = minY + UV_STEP_Y * static_cast<float>(halfStacks);
+		AABB2 quadUVs(minX, minY, maxX, maxY);
+
+		AddVertsForQuad3D(verts, BL, BR, TR, TL, color, quadUVs);
+	}
+
+	// ==================== Top hemisphere (centered at endPoint) ====================
+	std::vector<Vertex_PCU> topVertices;
+	topVertices.reserve((halfStacks + 1) * (numSlices + 1));
+
+	for (int stackIndex = 0; stackIndex <= halfStacks; stackIndex++)
+	{
+		for (int sliceIndex = 0; sliceIndex <= numSlices; sliceIndex++)
+		{
+			float yawDegrees = static_cast<float>(sliceIndex) * DEGREES_PER_SLICE;
+			// Top hemisphere: pitch from 0° to 90°
+			float pitchDegrees = static_cast<float>(stackIndex) * DEGREES_PER_STACK;
+
+			// Convert spherical coordinates to Cartesian in local space
+			float cosPitch = CosDegrees(pitchDegrees);
+			float sinPitch = SinDegrees(pitchDegrees);
+			float cosYaw = CosDegrees(yawDegrees);
+			float sinYaw = SinDegrees(yawDegrees);
+
+			// Build position in local coordinate system
+			Vec3 offset = iBasis * (radius * sinPitch) +
+				jBasis * (radius * cosPitch * cosYaw) +
+				kBasis * (radius * cosPitch * sinYaw);
+			Vec3 pos = endPoint + offset;
+
+			float u = static_cast<float>(sliceIndex) / static_cast<float>(numSlices);
+			float v = static_cast<float>(halfStacks + stackIndex) / static_cast<float>(numStacks);
+			Vec2 uv = UVs.GetPointAtUV(Vec2(u, v));
+
+			topVertices.emplace_back(pos, color, uv);
+		}
+	}
+
+	// Add triangles for top hemisphere
+	for (int stackIndex = 0; stackIndex < halfStacks; stackIndex++)
+	{
+		for (int sliceIndex = 0; sliceIndex < numSlices; sliceIndex++)
+		{
+			int offset = stackIndex * STRIDE + sliceIndex;
+
+			if (stackIndex == (halfStacks - 1))
+			{
+				// Top pole - single triangles
+				verts.emplace_back(topVertices[offset]);
+				verts.emplace_back(topVertices[offset + 1]);
+				verts.emplace_back(topVertices[offset + STRIDE]);
+			}
+			else
+			{
+				// Quads for the rest
+				verts.emplace_back(topVertices[offset]);
+				verts.emplace_back(topVertices[offset + 1]);
+				verts.emplace_back(topVertices[offset + STRIDE + 1]);
+
+				verts.emplace_back(topVertices[offset]);
+				verts.emplace_back(topVertices[offset + STRIDE + 1]);
+				verts.emplace_back(topVertices[offset + STRIDE]);
+			}
+		}
 	}
 }
 

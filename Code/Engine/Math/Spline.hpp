@@ -46,7 +46,9 @@ public:
 	int		GetPointIndexForInputKey(float inputKey) const;
 	int		GetPointIndexForOutputValueIfValueAccending(float outputValue) const;
 
-	void	ReorgnizeInputKeys(); // not used
+	void	SortByInputKey(); 
+	void	ResetInputKeysToSequential();
+
 	void	Reset(int newCapacity = 8);
 
 	bool	IsIndexValid(int index);
@@ -81,7 +83,9 @@ public:
 
 	int		GetPointIndexForInputKey(float inputKey) const;
 
-	void	ReorgnizeInputKeys(); // not used
+	void	SortByInputKey();
+	void	ResetInputKeysToSequential();
+
 	void	Reset(int newCapacity = 8);
 
 	bool	IsIndexValid(int index);
@@ -116,7 +120,9 @@ public:
 
 	int		GetPointIndexForInputKey(float inputKey) const;
 
-	void	ReorgnizeInputKeys(); // not used
+	void	SortByInputKey();
+	void	ResetInputKeysToSequential();
+
 	void	Reset(int newCapacity = 8);
 
 	bool	IsIndexValid(int index);
@@ -149,11 +155,60 @@ public:
 	int		GetPointIndexForInputKey(float inputKey) const;
 
 	void	AutoSetTangents();
+
 	void	ReorgnizeInputKeys(); // not used
+	void	SortByInputKey();
+	void	ResetInputKeysToSequential();
+
+
 	void	Reset(int newCapacity = 8);
 
 	bool	IsIndexValid(int index);
 };
+
+//-----------------------------------------------------------------------------------------------
+// 1D Spline
+// - Value Data (Scalar)
+// -  ReparamTable (Optional, for arc-length parameterization)
+//-----------------------------------------------------------------------------------------------
+struct SplinePoint1D
+{
+	float m_inputKey = 0.f;
+	float m_outputValue = 0.f;
+	float m_arriveTangent = 0.f;
+	float m_leaveTangent = 0.f;
+	CurveMode m_mode = CurveMode::LINEAR;
+
+	SplinePoint1D() = default;
+
+	explicit SplinePoint1D(float inputKey, float outputValue, float arriveTangent = 0.f, float leaveTangent = 0.f, CurveMode mode = CurveMode::LINEAR);
+
+	static SplinePoint1D const MakeFromHermite(float inputKey, float outputValue, float arriveTangent, float leaveTangent);
+	static SplinePoint1D const MakeFromContinuousHermite(float inputKey, float outputValue, float leaveTangent);
+
+};
+
+class Spline1D
+{
+public:
+	CurveFloat m_value;
+
+public:
+	// Mutator
+	void AddPoint(SplinePoint1D const& point);
+	void ClearAllSplinePoints();
+	void SetFromCatmullRomAlgorithm(std::vector<float> const& values);
+
+	// Accessors
+	int GetNumberOfSplinePoints() const;
+	int GetNumberOfSplineSegments() const;
+
+	float GetValueAtInputKey(float inputKey) const;
+	float GetDerivativeAtInputKey(float inputKey) const;
+
+	void GetValueListWithSubdivisions(std::vector<float>& values, int numSubdivisions = 1) const;
+};
+
 
 
 //-----------------------------------------------------------------------------------------------

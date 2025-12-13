@@ -3,8 +3,10 @@
 #include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
+#include "Engine/Math/Quat.hpp"
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/AABB3.hpp"
+#include "Engine/Math/Frustum.hpp"
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Math/LineSegment2.hpp"
 #include "Engine/Math/Capsule2.hpp"
@@ -96,6 +98,108 @@ float RangeMapClamped(float inValue, float inStart, float inEnd, float outStart,
 int RoundDownToInt(float value)
 {
     return static_cast<int>(floorf(value));
+}
+
+float InterpTo(float current, float target, float deltaTime, float interpSpeed)
+{
+	// If not interp speed, jump to target value
+	if (interpSpeed <= 0.f)
+	{
+		return target;
+	}
+
+	// Distance to reach
+	float const dist = target - current;
+
+	// If distance is too small, just set the desired location
+	if (dist * dist < 1e-7f)
+	{
+		return target;
+	}
+
+	float const deltaMove = dist * GetClampedZeroToOne(deltaTime * interpSpeed);
+
+	return current + deltaMove;
+}
+
+Vec3 InterpTo(Vec3 const& current, Vec3 const& target, float deltaTime, float interpSpeed)
+{
+    // If not interp speed, jump to target value
+    if (interpSpeed <= 0.f)
+    {
+        return target;
+    }
+    
+    // Distance to reach
+    Vec3 const dist = target - current;
+
+    // If distance is too small, just set the desired location
+    if (dist.GetLengthSquared() < 1e-7f)
+    {
+        return target;
+    }
+
+    Vec3 const deltaMove = dist * GetClampedZeroToOne(deltaTime * interpSpeed);
+
+    return current + deltaMove;
+}
+
+Vec2 InterpTo(Vec2 const& current, Vec2 const& target, float deltaTime, float interpSpeed)
+{
+	// If not interp speed, jump to target value
+	if (interpSpeed <= 0.f)
+	{
+		return target;
+	}
+
+	// Distance to reach
+	Vec2 const dist = target - current;
+
+	// If distance is too small, just set the desired location
+	if (dist.GetLengthSquared() < 1e-7f)
+	{
+		return target;
+	}
+
+	Vec2 const deltaMove = dist * GetClampedZeroToOne(deltaTime * interpSpeed);
+
+	return current + deltaMove;
+}
+
+Quat InterpTo(Quat const& current, Quat const& target, float deltaTime, float interpSpeed)
+{
+	// If no interp speed, jump to target value
+	if (interpSpeed <= 0.f)
+	{
+		return target;
+	}
+
+    // Assume normalized, nearly equal
+    float cosOmega = current | target;
+    if (cosOmega > 0.9999999f)
+    {
+        return target;
+    }
+
+    return Quat::Slerp(current, target, GetClampedZeroToOne(deltaTime * interpSpeed));
+}
+
+Quat InterpToNlerp(Quat const& current, Quat const& target, float deltaTime, float interpSpeed)
+{
+	// If no interp speed, jump to target value
+	if (interpSpeed <= 0.f)
+	{
+		return target;
+	}
+
+	// Assume normalized, nearly equal
+	float cosOmega = current | target;
+	if (cosOmega > 0.9999999f)
+	{
+		return target;
+	}
+
+	return Quat::Nlerp(current, target, GetClampedZeroToOne(deltaTime * interpSpeed));
 }
 
 float ConvertDegreesToRadians(float degrees)
@@ -416,6 +520,80 @@ bool IsPointInsideOBB3D(Vec3 const& point, OBB3 const& orientedBox)
 	Vec3 localPos = orientedBox.GetLocalPosForWorldPos(point);
 	AABB3 localOBB = AABB3(-orientedBox.m_halfDimensions, orientedBox.m_halfDimensions);
 	return localOBB.IsPointInside(localPos);
+}
+
+bool IsAABBOnOrInFrontOfPlane3D(AABB3 const& box, Plane3 const& plane)
+{
+    // Simple Method: Check all 8 corners
+	//Vec3 cornerPoints[8];
+	//box.GetCornerPoints(cornerPoints);
+
+	//for (int i = 0; i < 8; ++i)
+	//{
+	//	if (DotProduct3D(plane.m_normal, cornerPoints[i]) >= plane.m_distance)
+	//	{
+	//		return true;
+	//	}
+	//}
+
+ //   return false;
+
+    // Quicker Method
+    Vec3 halfDims = 0.5f * box.GetDimensions();
+    Vec3 center = box.GetCenter();
+
+    const float r = halfDims.x * fabsf(plane.m_normal.x) +
+        halfDims.y * fabsf(plane.m_normal.y) +
+        halfDims.z * fabsf(plane.m_normal.z);
+
+    return -r <= (DotProduct3D(plane.m_normal, center) - plane.m_distance);
+
+}
+
+bool IsPointInsideFrustum(Vec3 const& point, Frustum const& frustum)
+{
+    return frustum.m_topFace.IsPointInFrontOf(point) &&
+        frustum.m_bottomFace.IsPointInFrontOf(point) &&
+        frustum.m_leftFace.IsPointInFrontOf(point) &&
+        frustum.m_rightFace.IsPointInFrontOf(point) &&
+        frustum.m_farFace.IsPointInFrontOf(point) &&
+        frustum.m_nearFace.IsPointInFrontOf(point);
+}
+
+bool IsSphereOnFrustum(Vec3 const& sphereCenter, float sphereRadius, Frustum const& frustum)
+{
+    return frustum.m_topFace.GetSignedDistanceToPoint(sphereCenter) > -sphereRadius &&
+        frustum.m_bottomFace.GetSignedDistanceToPoint(sphereCenter) > -sphereRadius &&
+        frustum.m_leftFace.GetSignedDistanceToPoint(sphereCenter) > -sphereRadius &&
+        frustum.m_rightFace.GetSignedDistanceToPoint(sphereCenter) > -sphereRadius &&
+        frustum.m_farFace.GetSignedDistanceToPoint(sphereCenter) > -sphereRadius &&
+        frustum.m_nearFace.GetSignedDistanceToPoint(sphereCenter) > -sphereRadius;
+}
+
+bool IsAABBOnFrustum(AABB3 const& box, Frustum const& frustum)
+{
+    return IsAABBOnOrInFrontOfPlane3D(box, frustum.m_topFace) &&
+        IsAABBOnOrInFrontOfPlane3D(box, frustum.m_bottomFace) &&
+        IsAABBOnOrInFrontOfPlane3D(box, frustum.m_leftFace) &&
+        IsAABBOnOrInFrontOfPlane3D(box, frustum.m_rightFace) &&
+        IsAABBOnOrInFrontOfPlane3D(box, frustum.m_farFace) &&
+        IsAABBOnOrInFrontOfPlane3D(box, frustum.m_nearFace);
+}
+
+bool IsOBBOnFrustum(OBB3 const& orientedBox, Frustum const& frustum)
+{
+	Vec3 cornerPoints[8];
+	orientedBox.GetCornerPoints(cornerPoints);
+
+	for (int i = 0; i < 8; ++i)
+	{
+        if (IsPointInsideFrustum(cornerPoints[i], frustum))
+        {
+            return true;
+        }
+	}
+
+	return false;
 }
 
 bool DoDiscsOverlap(Vec2 const& centerA, float radiusA, Vec2 const& centerB, float radiusB)

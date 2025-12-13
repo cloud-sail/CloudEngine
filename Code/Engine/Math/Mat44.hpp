@@ -101,5 +101,7 @@ struct Mat44
 	void AppendScaleUniform3D(float uniformScaleXYZ);
 	void AppendScaleNonUniform2D(Vec2 const& nonUniformScaleXY);
 	void AppendScaleNonUniform3D(Vec3 const& nonUniformScaleXYZ);
+
+	Mat44 operator+(Mat44 const& other) const;
 };
 

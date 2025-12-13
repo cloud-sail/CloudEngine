@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <shared_mutex> 
 
 //-----------------------------------------------------------------------------------------------
 // Make Event Register and Fire not case sensitive
@@ -66,6 +67,8 @@ public:
 
 protected:
 	EventSystemConfig m_config;
+	
+	mutable std::shared_mutex m_subscriptionMutex;
 	std::map<std::string, SubscriptionList, CaseInsensitiveCompare> m_subscriptionListByEventName;
 };
 

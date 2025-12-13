@@ -79,6 +79,8 @@ void AddVertsForRoundedQuad3D(std::vector<Vertex_PCUTBN>& verts, std::vector<uns
 
 void AddVertsForAABB3D(std::vector<Vertex_PCU>& verts, AABB3 const& bounds, 
 	Rgba8 const& color = Rgba8::OPAQUE_WHITE, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
+void AddVertsForAABB3D(std::vector<Vertex_PCU>& verts, std::vector<unsigned int>& indexes, 
+	AABB3 const& bounds, Rgba8 const& color = Rgba8::OPAQUE_WHITE, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
 void AddVertsForAABB3D(std::vector<Vertex_PCUTBN>& verts, std::vector<unsigned int>& indexes,
 	AABB3 const& bounds, Rgba8 const& color = Rgba8::OPAQUE_WHITE, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
 
@@ -120,6 +122,18 @@ void AddVertsForArrow3D(std::vector<Vertex_PCU>& verts,
 void AddVertsForOBB3(std::vector<Vertex_PCU>& verts, OBB3 const& bounds, Rgba8 const& color, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
 
 void AddVertsForPenumbra3D(std::vector<Vertex_PCU>& verts, Vec3 const& position, Vec3 const& fwdNormal, float radius, float penumbraDot, Rgba8 const& color = Rgba8::OPAQUE_WHITE, int numSlices = 16);
+
+void AddVertsForRing3D(std::vector<Vertex_PCU>& verts,
+	Vec3 const& bottomCenter, Vec3 const& topCenter, float innerRadius, float thickness,
+	Rgba8 const& color = Rgba8::OPAQUE_WHITE, AABB2 const& UVs = AABB2::ZERO_TO_ONE, int numSlices = 8);
+
+void AddVertsForTorusZ3D(std::vector<Vertex_PCU>& verts,
+	float majorRadius, float minorRadius, int numMajorSegments = 32, int numMinorSegments = 8,
+	Rgba8 const& color = Rgba8::OPAQUE_WHITE, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
+
+void AddVertsForCapsule3D(std::vector<Vertex_PCU>& verts, Vec3 const& startPoint, Vec3 const& endPoint, float radius,
+	int numSlices = 32, int numStacks = 16,
+	Rgba8 const& color = Rgba8::OPAQUE_WHITE, AABB2 const& UVs = AABB2::ZERO_TO_ONE);
 
 //-----------------------------------------------------------------------------------------------
 void AddVertsForGridXY(std::vector<Vertex_PCU>& verts, IntVec2 dimensions);

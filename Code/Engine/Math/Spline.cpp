@@ -2,6 +2,7 @@
 #include "Engine/Math/MathUtils.hpp"
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Core/EngineCommon.hpp"
+#include <algorithm>
 
 CurvePointFloat::CurvePointFloat(float inputKey, float outputValue, float arriveTangent /*= 0.f*/, float leaveTanget /*= 0.f*/, CurveMode mode /*= CurveMode::LINEAR*/)
 	: m_inputKey(inputKey)
@@ -117,7 +118,15 @@ int CurveFloat::GetPointIndexForOutputValueIfValueAccending(float outputValue) c
 	return left;
 }
 
-void CurveFloat::ReorgnizeInputKeys()
+void CurveFloat::SortByInputKey()
+{
+	std::sort(m_points.begin(), m_points.end(),
+		[](CurvePointFloat const& a, CurvePointFloat const& b) {
+			return a.m_inputKey < b.m_inputKey;
+		});
+}
+
+void CurveFloat::ResetInputKeysToSequential()
 {
 	int numPoints = (int)m_points.size();
 
@@ -364,7 +373,15 @@ int CurveVec2::GetPointIndexForInputKey(float inputKey) const
 	return left;
 }
 
-void CurveVec2::ReorgnizeInputKeys()
+void CurveVec2::SortByInputKey()
+{
+	std::sort(m_points.begin(), m_points.end(),
+		[](CurvePointVec2 const& a, CurvePointVec2 const& b) {
+			return a.m_inputKey < b.m_inputKey;
+		});
+}
+
+void CurveVec2::ResetInputKeysToSequential()
 {
 	int numPoints = (int)m_points.size();
 
@@ -517,7 +534,15 @@ int CurveVec3::GetPointIndexForInputKey(float inputKey) const
 	return left;
 }
 
-void CurveVec3::ReorgnizeInputKeys()
+void CurveVec3::SortByInputKey()
+{
+	std::sort(m_points.begin(), m_points.end(),
+		[](CurvePointVec3 const& a, CurvePointVec3 const& b) {
+			return a.m_inputKey < b.m_inputKey;
+		});
+}
+
+void CurveVec3::ResetInputKeysToSequential()
 {
 	int numPoints = (int)m_points.size();
 
@@ -652,7 +677,15 @@ void CurveQuat::AutoSetTangents()
 	}
 }
 
-void CurveQuat::ReorgnizeInputKeys()
+void CurveQuat::SortByInputKey()
+{
+	std::sort(m_points.begin(), m_points.end(),
+		[](CurvePointQuat const& a, CurvePointQuat const& b) {
+			return a.m_inputKey < b.m_inputKey;
+		});
+}
+
+void CurveQuat::ResetInputKeysToSequential()
 {
 	int numPoints = (int)m_points.size();
 
@@ -660,6 +693,7 @@ void CurveQuat::ReorgnizeInputKeys()
 	{
 		m_points[i].m_inputKey = (float)i;
 	}
+
 }
 
 void CurveQuat::Reset(int newCapacity /*= 8*/)
@@ -1309,4 +1343,132 @@ void Spline3D::UpdateSpline()
 		}
 	}
 
+}
+
+SplinePoint1D::SplinePoint1D(float inputKey, float outputValue, float arriveTangent /*= 0.f*/, float leaveTangent /*= 0.f*/, CurveMode mode /*= CurveMode::LINEAR*/)
+	: m_inputKey(inputKey)
+	, m_outputValue(outputValue)
+	, m_arriveTangent(arriveTangent)
+	, m_leaveTangent(leaveTangent)
+	, m_mode(mode)
+{
+
+}
+
+STATIC SplinePoint1D const SplinePoint1D::MakeFromHermite(float inputKey, float outputValue, float arriveTangent, float leaveTangent)
+{
+	return SplinePoint1D(inputKey, outputValue, arriveTangent, leaveTangent, CurveMode::CURVE);
+}
+
+STATIC SplinePoint1D const SplinePoint1D::MakeFromContinuousHermite(float inputKey, float outputValue, float leaveTangent)
+{
+	return SplinePoint1D(inputKey, outputValue, leaveTangent, leaveTangent, CurveMode::CURVE);
+}
+
+void Spline1D::AddPoint(SplinePoint1D const& point)
+{
+	m_value.m_points.push_back(CurvePointFloat(point.m_inputKey, point.m_outputValue, point.m_arriveTangent, point.m_leaveTangent, point.m_mode));
+}
+
+void Spline1D::ClearAllSplinePoints()
+{
+	m_value.Reset();
+}
+
+void Spline1D::SetFromCatmullRomAlgorithm(std::vector<float> const& values)
+{
+	ClearAllSplinePoints();
+
+	int numPoints = (int)values.size();
+
+	if (numPoints <= 0)
+	{
+		return;
+	}
+	else if (numPoints == 1)
+	{
+		AddPoint(SplinePoint1D::MakeFromContinuousHermite(0.f, values[0], 0.f));
+	}
+	else
+	{
+		AddPoint(SplinePoint1D::MakeFromContinuousHermite(0.f, values[0], 0.f));
+
+		for (int index = 1; index <= numPoints - 2; ++index)
+		{
+			float tangent = (values[index + 1] - values[index - 1]) * 0.5f;
+			AddPoint(SplinePoint1D::MakeFromContinuousHermite((float)index, values[index], tangent));
+		}
+
+		AddPoint(SplinePoint1D::MakeFromContinuousHermite((float)(numPoints - 1), values[numPoints - 1], 0.f));
+	}
+}
+
+int Spline1D::GetNumberOfSplinePoints() const
+{
+	return static_cast<int>(m_value.m_points.size());
+}
+
+int Spline1D::GetNumberOfSplineSegments() const
+{
+	int numPoints = (int)m_value.m_points.size();
+	return (numPoints >= 1) ? (numPoints - 1) : 0;
+}
+
+float Spline1D::GetValueAtInputKey(float inputKey) const
+{
+	return m_value.Eval(inputKey);
+}
+
+float Spline1D::GetDerivativeAtInputKey(float inputKey) const
+{
+	return m_value.EvalDerivative(inputKey);
+}
+
+void Spline1D::GetValueListWithSubdivisions(std::vector<float>& values, int numSubdivisions /*= 1*/) const
+{
+	GUARANTEE_OR_DIE(numSubdivisions > 0, "invalid subdivision number.");
+
+	int numPoints = (int)m_value.m_points.size();
+	if (numPoints == 0)
+	{
+		return;
+	}
+
+	int numSegments = numPoints - 1;
+
+	values.clear();
+	values.reserve(numSegments * numSubdivisions + 1);
+
+	values.push_back(m_value.m_points[0].m_outputValue);
+
+	for (int segmentIndex = 0; segmentIndex < numSegments; ++segmentIndex)
+	{
+		CurvePointFloat const& startPoint = m_value.m_points[segmentIndex];
+		CurvePointFloat const& endPoint = m_value.m_points[segmentIndex + 1];
+		float diff = endPoint.m_inputKey - startPoint.m_inputKey;
+
+		for (int step = 1; step <= numSubdivisions; ++step)
+		{
+			float t = static_cast<float>(step) / static_cast<float>(numSubdivisions);
+
+			float curValue;
+			if (diff > 0.f)
+			{
+				if (startPoint.m_mode == CurveMode::LINEAR)
+				{
+					curValue = Interpolate(startPoint.m_outputValue, endPoint.m_outputValue, t);
+				}
+				else
+				{
+					curValue = ComputeCubicHermite(startPoint.m_outputValue, startPoint.m_leaveTangent * diff, endPoint.m_outputValue, endPoint.m_arriveTangent * diff, t);
+				}
+			}
+			else
+			{
+				curValue = startPoint.m_outputValue;
+			}
+
+			values.push_back(curValue);
+		}
+	}
 }

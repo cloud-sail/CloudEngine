@@ -23,6 +23,7 @@ Window::Window(WindowConfig const& config)
 	: m_config(config)
 {
 	s_mainWindow = this;
+	m_isDesiredFullscreen = config.m_isInitialFullscreen;
 }
 
 void Window::Startup()
@@ -185,6 +186,20 @@ LRESULT CALLBACK WindowsMessageHandlingProcedure(HWND windowHandle, UINT wmMessa
 		{
 			EventArgs args;
 			args.SetValue("KeyCode", Stringf("%d", KEYCODE_RIGHT_MOUSE));
+			FireEvent("KeyReleased", args);
+			return 0;
+		}
+		case WM_MBUTTONDOWN:
+		{
+			EventArgs args;
+			args.SetValue("KeyCode", Stringf("%d", KEYCODE_MIDDLE_MOUSE));
+			FireEvent("KeyPressed", args);
+			return 0;
+		}
+		case WM_MBUTTONUP:
+		{
+			EventArgs args;
+			args.SetValue("KeyCode", Stringf("%d", KEYCODE_MIDDLE_MOUSE));
 			FireEvent("KeyReleased", args);
 			return 0;
 		}

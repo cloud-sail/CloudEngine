@@ -52,6 +52,11 @@ Vec3 const AABB3::GetCenter() const
 	return (m_maxs + m_mins) * 0.5f;
 }
 
+Vec3 const AABB3::GetDimensions() const
+{
+	return (m_maxs - m_mins);
+}
+
 void AABB3::GetCornerPoints(Vec3* out_eightCornerPositions) const
 {
 	out_eightCornerPositions[0] = Vec3(m_mins.x, m_mins.y, m_mins.z);

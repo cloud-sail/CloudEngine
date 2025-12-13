@@ -1,7 +1,8 @@
 #include "Engine/Core/FileUtils.hpp"
 #include "Engine/Core/EngineCommon.hpp"
 #include <stdio.h>
-
+#include <filesystem>
+#include <fstream>
 
 int FileReadToBuffer(std::vector<uint8_t>& outBuffer, const std::string& fileName)
 {
@@ -54,5 +55,44 @@ int FileReadToString(std::string& outString, const std::string& fileName)
 	outString = std::string(buffer.begin(), buffer.end());
 
 	return result;
+}
+
+bool FileExists(std::string const& filename)
+{
+	return std::filesystem::exists(filename);
+}
+
+int FileWriteFromBuffer(std::vector<uint8_t> const& inBuffer, const std::string& filename)
+{
+	std::ofstream ofs(filename, std::ios::binary | std::ios::out | std::ios::trunc);
+	if (!ofs.is_open())
+	{
+		ERROR_RECOVERABLE("Could not open file.");
+		return -1;
+	}
+
+	if (!inBuffer.empty())
+	{
+		ofs.write(reinterpret_cast<const char*>(inBuffer.data()), static_cast<std::streamsize>(inBuffer.size()));
+		if (!ofs.good())
+		{
+			ERROR_RECOVERABLE("Could not write file.");
+			return -2;
+		}
+	}
+	ofs.close();
+	return static_cast<int>(inBuffer.size());
+}
+
+bool EnsureDirectoryExists(std::string const& dirPath)
+{
+	namespace fs = std::filesystem;
+	std::error_code ec;
+	if (dirPath.empty())
+		return false;
+	fs::path p = fs::u8path(dirPath);
+	if (fs::exists(p, ec))
+		return fs::is_directory(p, ec);
+	return fs::create_directories(p, ec);
 }
 

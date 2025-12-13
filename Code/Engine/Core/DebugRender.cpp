@@ -11,6 +11,9 @@
 #include <vector>
 #include <algorithm>
 
+#include <mutex>
+#include <atomic>
+
 class Texture;
 
 // only be seen in this cpp,  or use static for variable
@@ -19,7 +22,8 @@ namespace
 	constexpr float	MESSAGE_MARGIN_RATIO = 0.2f;
 
 	DebugRenderConfig s_config;
-	bool s_isVisible = true;
+
+	std::atomic<bool> s_isVisible{ true };
 	BitmapFont* s_font = nullptr;
 
 	struct DebugRenderObject
@@ -116,14 +120,14 @@ namespace
 		{
 			s_config.m_renderer->SetBlendMode(BlendMode::ALPHA);
 			s_config.m_renderer->SetDepthMode(DepthMode::DISABLED);
-			s_config.m_renderer->SetRenderTargetFormats();
+			//s_config.m_renderer->SetRenderTargetFormats();
 			s_config.m_renderer->DrawVertexArray(m_vertexs);
 		}
 		else if (m_mode == DebugRenderMode::USE_DEPTH)
 		{
 			s_config.m_renderer->SetBlendMode(BlendMode::ALPHA);
 			s_config.m_renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-			s_config.m_renderer->SetRenderTargetFormats();
+			//s_config.m_renderer->SetRenderTargetFormats();
 
 			s_config.m_renderer->DrawVertexArray(m_vertexs);
 
@@ -137,7 +141,7 @@ namespace
 #endif // ENGINE_RENDER_D3D12
 			s_config.m_renderer->SetBlendMode(BlendMode::ALPHA);
 			s_config.m_renderer->SetDepthMode(DepthMode::READ_ONLY_ALWAYS);
-			s_config.m_renderer->SetRenderTargetFormats();
+			//s_config.m_renderer->SetRenderTargetFormats();
 #ifdef ENGINE_RENDER_D3D12
 			s_config.m_renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
 #endif // ENGINE_RENDER_D3D12
@@ -150,7 +154,7 @@ namespace
 
 			s_config.m_renderer->SetBlendMode(BlendMode::OPAQUE);
 			s_config.m_renderer->SetDepthMode(DepthMode::READ_WRITE_LESS_EQUAL);
-			s_config.m_renderer->SetRenderTargetFormats();
+			//s_config.m_renderer->SetRenderTargetFormats();
 #ifdef ENGINE_RENDER_D3D12
 			s_config.m_renderer->SetGraphicsBindlessResources(sizeof(UnlitRenderResources), &resources);
 #endif // ENGINE_RENDER_D3D12
@@ -172,6 +176,10 @@ namespace
 		// Infinite and One frame
 		return m_duration <= 0.f;
 	}
+
+	std::mutex s_worldGeometryMutex;
+	std::mutex s_screenGeometryMutex;
+	std::mutex s_screenMessageMutex;
 
 	std::vector<DebugRenderObject> s_worldGeometry;
 	std::vector<DebugRenderObject> s_screenGeometry;
@@ -209,16 +217,17 @@ void DebugRenderSystemShutdown()
 
 void DebugRenderSetVisible()
 {
-	s_isVisible = true;
+	s_isVisible.store(true, std::memory_order_relaxed);
 }
 
 void DebugRenderSetHidden()
 {
-	s_isVisible = false;
+	s_isVisible.store(false, std::memory_order_relaxed);
 }
 
 void DebugRenderClear()
 {
+	std::scoped_lock lock(s_worldGeometryMutex, s_screenGeometryMutex, s_screenMessageMutex);
 	s_worldGeometry.clear();
 	s_screenGeometry.clear();
 	s_screenMessage.clear();
@@ -233,10 +242,12 @@ void DebugRenderBeginFrame()
 
 void DebugRenderWorld(Camera const& camera)
 {
-	if (!s_isVisible)
+	if (!s_isVisible.load(std::memory_order_relaxed))
 	{
 		return;
 	}
+
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 
 	s_config.m_renderer->BeginCamera(camera);
 	s_config.m_renderer->BeginRenderEvent("DebugRenderWorld");
@@ -253,10 +264,12 @@ void DebugRenderWorld(Camera const& camera)
 void DebugRenderScreen(Camera const& camera)
 {
 	GUARANTEE_OR_DIE(camera.IsMode(Camera::Mode::eMode_Orthographic), "Debug Render Screen Camera is not orthographic!");
-	if (!s_isVisible)
+	if (!s_isVisible.load(std::memory_order_relaxed))
 	{
 		return;
 	}
+
+	std::scoped_lock lock(s_screenGeometryMutex, s_screenMessageMutex);
 
 	s_config.m_renderer->BeginCamera(camera);
 	s_config.m_renderer->BeginRenderEvent("DebugRenderScreen");
@@ -310,9 +323,18 @@ void DebugRenderScreen(Camera const& camera)
 
 void DebugRenderEndFrame()
 {
-	RemoveFinishedDebugRenderObjects(s_worldGeometry);
-	RemoveFinishedDebugRenderObjects(s_screenGeometry);
-	RemoveFinishedDebugRenderObjects(s_screenMessage);
+	{
+		std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
+		RemoveFinishedDebugRenderObjects(s_worldGeometry);
+	}
+	{
+		std::lock_guard<std::mutex> lock(s_screenGeometryMutex);
+		RemoveFinishedDebugRenderObjects(s_screenGeometry);
+	}
+	{
+		std::lock_guard<std::mutex> lock(s_screenMessageMutex);
+		RemoveFinishedDebugRenderObjects(s_screenMessage);
+	}
 }
 
 
@@ -322,14 +344,33 @@ void DebugRenderEndFrame()
 #pragma region Geometry
 void DebugAddWorldWirePenumbraNoneCull(Vec3 const& center, Vec3 const& fwdNormal, float radius, float penumbraDot, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForPenumbra3D(obj.m_vertexs, center, fwdNormal, radius, penumbraDot);
 	obj.m_rasterizerMode = RasterizerMode::WIREFRAME_CULL_NONE;
 }
 
+void DebugAddWorldTriangleList(std::vector<Vertex_PCU> const& verts, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
+{
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
+	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
+	DebugRenderObject& obj = s_worldGeometry.back();
+	obj.m_vertexs = verts;
+}
+
+void DebugAddWorldWireTriangleListNoneCull(std::vector<Vertex_PCU> const& verts, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
+{
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
+	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
+	DebugRenderObject& obj = s_worldGeometry.back();
+	obj.m_vertexs = verts;
+	obj.m_rasterizerMode = RasterizerMode::WIREFRAME_CULL_NONE;
+}
+
 void DebugAddWorldSphere(Vec3 const& center, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForSphere3D(obj.m_vertexs, center, radius);
@@ -337,6 +378,7 @@ void DebugAddWorldSphere(Vec3 const& center, float radius, float duration, Rgba8
 
 void DebugAddWorldWireSphere(Vec3 const& center, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForSphere3D(obj.m_vertexs, center, radius);
@@ -345,6 +387,7 @@ void DebugAddWorldWireSphere(Vec3 const& center, float radius, float duration, R
 
 void DebugAddWorldWireSphereNoneCull(Vec3 const& center, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForSphere3D(obj.m_vertexs, center, radius);
@@ -353,6 +396,7 @@ void DebugAddWorldWireSphereNoneCull(Vec3 const& center, float radius, float dur
 
 void DebugAddWorldCylinder(Vec3 const& start, Vec3 const& end, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForCylinder3D(obj.m_vertexs, start, end, radius);
@@ -360,6 +404,7 @@ void DebugAddWorldCylinder(Vec3 const& start, Vec3 const& end, float radius, flo
 
 void DebugAddWorldWireCylinder(Vec3 const& start, Vec3 const& end, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForCylinder3D(obj.m_vertexs, start, end, radius);
@@ -368,6 +413,7 @@ void DebugAddWorldWireCylinder(Vec3 const& start, Vec3 const& end, float radius,
 
 void DebugAddWorldArrow(Vec3 const& start, Vec3 const& end, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForArrow3D(obj.m_vertexs, start, end, radius);
@@ -375,6 +421,7 @@ void DebugAddWorldArrow(Vec3 const& start, Vec3 const& end, float radius, float 
 
 void DebugAddWorldWireArrow(Vec3 const& start, Vec3 const& end, float radius, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	AddVertsForArrow3D(obj.m_vertexs, start, end, radius);
@@ -383,6 +430,7 @@ void DebugAddWorldWireArrow(Vec3 const& start, Vec3 const& end, float radius, fl
 
 void DebugAddBasis(Mat44 const& transform, float duration, float length, float radius, float colorScale /*= 1.0f*/, float alphaScale /*= 1.0f*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(Rgba8::OPAQUE_WHITE, Rgba8::OPAQUE_WHITE, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 
@@ -401,6 +449,7 @@ void DebugAddBasis(Mat44 const& transform, float duration, float length, float r
 
 void DebugAddWorldBasis(Mat44 const& transform, float duration, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	constexpr float LENGTH = 1.f;
 	constexpr float RADIUS = 0.075f;
 	s_worldGeometry.emplace_back(Rgba8::OPAQUE_WHITE, Rgba8::OPAQUE_WHITE, duration, mode);
@@ -418,6 +467,7 @@ void DebugAddWorldBasis(Mat44 const& transform, float duration, DebugRenderMode 
 
 void DebugAddWorldText(std::string const& text, Mat44 const& transform, float textHeight, float duration, float cellAspect /*= 1.0f*/, Vec2 const& alignment /*= Vec2(0.5f, 0.5f)*/, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	s_font->AddVertsForText3DAtOriginXForward(obj.m_vertexs, textHeight, text, Rgba8::OPAQUE_WHITE, cellAspect, alignment);
@@ -428,6 +478,7 @@ void DebugAddWorldText(std::string const& text, Mat44 const& transform, float te
 
 void DebugAddWorldBillboardText(std::string const& text, Vec3 const& origin, float textHeight, float duration, float cellAspect /*= 1.0f*/, Vec2 const& alignment /*= Vec2(0.5f, 0.5f)*/, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/, DebugRenderMode mode /*= DebugRenderMode::USE_DEPTH*/)
 {
+	std::lock_guard<std::mutex> lock(s_worldGeometryMutex);
 	s_worldGeometry.emplace_back(startColor, endColor, duration, mode);
 	DebugRenderObject& obj = s_worldGeometry.back();
 	s_font->AddVertsForText3DAtOriginXForward(obj.m_vertexs, textHeight, text, Rgba8::OPAQUE_WHITE, cellAspect, alignment);
@@ -439,6 +490,7 @@ void DebugAddWorldBillboardText(std::string const& text, Vec3 const& origin, flo
 
 void DebugAddScreenText(std::string const& text, AABB2 const& box, float cellHeight, Vec2 const& alignment, float duration, float cellAspect /*= 1.0f*/, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/)
 {
+	std::lock_guard<std::mutex> lock(s_screenGeometryMutex);
 	s_screenGeometry.emplace_back(startColor, endColor, duration, DebugRenderMode::ALWAYS);
 	DebugRenderObject& obj = s_screenGeometry.back();
 	s_font->AddVertsForTextInBox2D(obj.m_vertexs, text, box, cellHeight, Rgba8::OPAQUE_WHITE, cellAspect, alignment);
@@ -448,6 +500,7 @@ void DebugAddScreenText(std::string const& text, AABB2 const& box, float cellHei
 
 void DebugAddMessage(std::string const& text, float duration, Rgba8 const& startColor /*= Rgba8::OPAQUE_WHITE*/, Rgba8 const& endColor /*= Rgba8::OPAQUE_WHITE*/)
 {
+	std::lock_guard<std::mutex> lock(s_screenMessageMutex);
 	s_screenMessage.emplace_back(startColor, endColor, duration, DebugRenderMode::ALWAYS);
 	DebugRenderObject& obj = s_screenMessage.back();
 	s_font->AddVertsForText2D(obj.m_vertexs, Vec2::ZERO, s_config.m_messageCellHeight, text, Rgba8::OPAQUE_WHITE, s_config.m_messageAspectRatio);
@@ -467,7 +520,7 @@ bool Command_DebugRenderClear(EventArgs& args)
 bool Command_DebugRenderToggle(EventArgs& args)
 {
 	UNUSED(args);
-	if (s_isVisible)
+	if (s_isVisible.load(std::memory_order_relaxed))
 	{
 		DebugRenderSetHidden();
 	}

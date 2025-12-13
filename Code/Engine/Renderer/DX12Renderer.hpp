@@ -83,6 +83,8 @@ public:
 	void BeginCamera(Camera const& camera) override;
 	void EndCamera(Camera const& camera) override;
 
+	void BeginCamera(Camera const& camera, Vec2 const& targetSize) override;
+
 public:
 	VertexBuffer* CreateVertexBuffer(const unsigned int size, unsigned int stride) override;
 	IndexBuffer* CreateIndexBuffer(const unsigned int size) override;
@@ -102,6 +104,37 @@ public:
 	void DrawIndexedVertexBuffer(VertexBuffer* vbo, IndexBuffer* ibo, unsigned int indexCount) override;
 
 	void DrawProcedural(unsigned int vertexCount) override;
+
+	// Instance Drawing API (Put InstanceData in StructuredBuffer)
+	// Notes: instance drawing with different input layout is not as flexible as structured buffer. It needs more input layout type and the second vertex buffer
+	
+	// SV_VertexID + SV_InstanceID
+	void DrawProceduralInstanced(unsigned int vertexCountPerInstance, unsigned int instanceCount) override;
+
+	// Vertex Buffer + SV_InstanceID
+	void DrawVertexBufferInstanced(VertexBuffer* vbo, unsigned int vertexCountPerInstance, unsigned int instanceCount) override;
+
+	// Index Buffer + Vertex Buffer + SV_InstanceID
+	void DrawIndexedVertexBufferInstanced(VertexBuffer* vbo, IndexBuffer* ibo,
+		unsigned int indexCountPerInstance, unsigned int instanceCount) override;
+
+	// Dynamic Vertex Buffer + SV_InstanceID
+	void DrawVertexArrayInstanced(std::vector<Vertex_PCU> const& verts, unsigned int instanceCount) override;
+	void DrawVertexArrayInstanced(std::vector<Vertex_PCUTBN> const& verts, unsigned int instanceCount) override;
+
+	// Dynamic Vertex Buffer + Dynamic Index Buffer + SV_InstanceID
+	void DrawIndexedVertexArrayInstanced(std::vector<Vertex_PCU> const& verts,
+		std::vector<unsigned int> const& indexes,
+		unsigned int instanceCount) override;
+	void DrawIndexedVertexArrayInstanced(std::vector<Vertex_PCUTBN> const& verts,
+		std::vector<unsigned int> const& indexes,
+		unsigned int instanceCount) override;
+
+	// SV_VertexID + Index Buffer + SV_InstanceID
+	void DrawIndexedProceduralInstanced(IndexBuffer* ibo, unsigned int indexCountPerInstance, unsigned int instanceCount) override;
+	void DrawIndexedProceduralInstanced(std::vector<unsigned int> const& indexes, unsigned int instanceCount) override;
+
+
 
 public:
 	void Dispatch1D(unsigned int threadCountX, unsigned int groupSizeX = 64) override;
@@ -196,7 +229,9 @@ protected:
 	//-----------------------------------------------------------------------------------------------
 	Texture* GetTextureForFileName(char const* imageFilePath);
 	Texture* CreateTextureFromFile(char const* imageFilePath);
+	Texture* CreateDDSTextureFromFile(char const* ddsFilePath);
 	Texture* CreateTextureFromImage(Image const& image);
+
 	Texture* CreateTextureCubeFromSixFaces(TextureCubeSixFacesConfig const& config);
 	
 	uint32_t GetDefaultTextureSrvIndex(DefaultTexture type);
@@ -246,6 +281,8 @@ public:
 	void ClearDepthAndStencilByIndex(uint32_t dsvIndex, float clearDepth = 1.f, uint8_t clearStencil = 0) override;
 
 	// Use it with care
+	uint32_t GetCurrentBackBufferIndex() const override;
+	uint32_t GetDefaultDepthBufferIndex() const override;
 	Texture* GetDefaultDepthBuffer() const override { return m_defaultDepthBuffer; }
 
 	void SetGraphicsBindlessResources(size_t resourceSizeInBytes, const void* pResource) override;

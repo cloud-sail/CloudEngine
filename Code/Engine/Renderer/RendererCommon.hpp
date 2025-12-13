@@ -43,6 +43,7 @@ constexpr uint32_t INVALID_INDEX_U32 = static_cast<uint32_t>(-1);
 struct RendererConfig
 {
 	Window* m_window = nullptr;
+	uint32_t m_maxResourceReleasesPerFrame = 32;
 };
 
 
@@ -91,6 +92,8 @@ enum class VertexType
 	VERTEX_NONE,
 	VERTEX_PCU,
 	VERTEX_PCUTBN,
+	VERTEX_PNMD,
+	VERTEX_TERRAIN,
 	COUNT
 };
 
@@ -239,8 +242,8 @@ struct TextureCubeSixFacesConfig
 //-----------------------------------------------------------------------------------------------
 constexpr unsigned int SWAP_CHAIN_BUFFER_COUNT = 2;
 constexpr unsigned int FRAMES_IN_FLIGHT = 3;
-constexpr size_t MAX_LINEAR_ALLOCATOR_SIZE = 64 * 1024 * 1024; // 64MB
-constexpr size_t MAX_MAIN_LINEAR_ALLOCATOR_SIZE = 64 * 1024 * 1024; // 64MB
+constexpr size_t MAX_LINEAR_ALLOCATOR_SIZE = 256 * 1024 * 1024; // 64MB
+constexpr size_t MAX_MAIN_LINEAR_ALLOCATOR_SIZE = 256 * 1024 * 1024; // 64MB
 constexpr unsigned int IMGUI_SRV_HEAP_SIZE = 64;
 
 
@@ -323,7 +326,11 @@ enum class DXResourceDimension
 	UNKNOWN,
 	BUFFER,
 	TEXTURE1D,
+	TEXTURE1DARRAY, 
 	TEXTURE2D,
+	TEXTURE2DARRAY, 
+	TEXTURECUBE,
+	TEXTURECUBEARRAY,
 	TEXTURE3D,
 };
 
@@ -417,7 +424,7 @@ enum class DefaultTexture
 	WhiteOpaque2D,
 	DefaultNormalMap,
 	DefaultSpecGlossEmitMap,
-	DefaultOcclusionRoughnessMetalnessMap,
+	DefaultORMHMap, // AO-1.f, Roughness-0.5f, Metallic-0.f, Height-0.5f
 	CheckerboardMagentaBlack2D,
 	NUM
 };
@@ -478,6 +485,11 @@ struct PBRRenderResources
 	uint32_t cameraConstantsIndex = INVALID_INDEX_U32;
 	uint32_t modelConstantsIndex = INVALID_INDEX_U32;
 	uint32_t lightConstantsIndex = INVALID_INDEX_U32;
+
+	uint32_t radianceTextureIndex = INVALID_INDEX_U32;
+	uint32_t irradianceTextureIndex = INVALID_INDEX_U32;
+	uint32_t brdfLutTextureIndex = INVALID_INDEX_U32;
+
 	/*
 	uint32_t materialConstantsIndex; // #Todo
 	struct MaterialConstants

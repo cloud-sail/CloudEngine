@@ -193,6 +193,7 @@ STATIC bool DevConsole::Command_Clear(EventArgs& args)
 		return false;
 	}
 
+	std::lock_guard<std::shared_mutex> lock(g_theDevConsole->m_linesMutex);
 	g_theDevConsole->m_lines.clear();
 	return true;
 }
@@ -236,10 +237,16 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, Bitmap
 	AABB2 inputTextBox = AABB2(bounds.m_mins.x, bounds.m_mins.y, bounds.m_maxs.x, bounds.m_mins.y + cellHeight);
 	font.AddVertsForTextInBox2D(verts, m_inputText, inputTextBox, cellHeight, DevConsole::INFO_TEXT, fontAspectScale, Vec2(0.f, 0.5f));
 
+	std::vector<DevConsoleLine> linesCopy;
+	{
+		std::shared_lock<std::shared_mutex> lock(m_linesMutex); // read lock
+		linesCopy = m_lines;
+	}
+
 	// Lines in DevConsole
 	int currentRow = 1;
 
-	for (int lineIndex = static_cast<int>(m_lines.size() - 1); lineIndex >= 0; --lineIndex)
+	for (int lineIndex = static_cast<int>(linesCopy.size() - 1); lineIndex >= 0; --lineIndex)
 	{
 		if (static_cast<float>(currentRow) > m_config.m_linesOnScreen)
 		{
@@ -249,7 +256,7 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, Bitmap
 		float minY = bounds.m_mins.y + static_cast<float>(currentRow) * cellHeight;
 		AABB2 box = AABB2(bounds.m_mins.x, minY, bounds.m_maxs.x, minY + cellHeight);
 
-		DevConsoleLine const& line = m_lines[lineIndex];
+		DevConsoleLine const& line = linesCopy[lineIndex];
 		font.AddVertsForTextInBox2D(verts, line.m_text, box, cellHeight, line.m_color, fontAspectScale, Vec2(0.f, 0.5f));
 		
 		currentRow++;
@@ -276,7 +283,7 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, Bitmap
 	renderer.SetBlendMode(BlendMode::ALPHA);
 	renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer.SetDepthMode(DepthMode::DISABLED);
-	renderer.SetRenderTargetFormats();
+	//renderer.SetRenderTargetFormats();
 	renderer.DrawVertexArray(verts);
 
 	if (m_insertionPointVisible)
@@ -310,7 +317,7 @@ void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, Bitmap
 		renderer.SetBlendMode(BlendMode::ALPHA);
 		renderer.SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 		renderer.SetDepthMode(DepthMode::DISABLED);
-		renderer.SetRenderTargetFormats();
+		//renderer.SetRenderTargetFormats();
 		renderer.DrawVertexArray(insertionPointVerts);
 	}
 }
@@ -458,7 +465,7 @@ void DevConsole::Render(AABB2 const& bounds, Renderer* rendererOverride /*= null
 	renderer->SetBlendMode(BlendMode::ALPHA);
 	renderer->SetRasterizerMode(RasterizerMode::SOLID_CULL_NONE);
 	renderer->SetDepthMode(DepthMode::DISABLED);
-	renderer->SetRenderTargetFormats();
+	//renderer->SetRenderTargetFormats();
 
 	renderer->DrawVertexArray(verts);
 
@@ -472,28 +479,52 @@ void DevConsole::Render(AABB2 const& bounds, Renderer* rendererOverride /*= null
 
 DevConsoleMode DevConsole::GetMode() const
 {
-	return m_mode;
+	return m_mode.load();
 }
 
 void DevConsole::SetMode(DevConsoleMode mode)
 {
-	m_mode = mode;
+	m_mode.store(mode);
 }
 
 void DevConsole::ToggleMode(DevConsoleMode mode)
 {
-	if (m_mode == mode)
+	DevConsoleMode expected = m_mode.load(); // current value
+	DevConsoleMode desired;
+
+	do 
 	{
-		m_mode = DevConsoleMode::HIDDEN;
-	}
-	else
-	{
-		m_mode = mode;
-	}
+		if (expected == mode) 
+		{
+			desired = DevConsoleMode::HIDDEN;
+		}
+		else {
+			desired = mode;
+		}
+	} while (!m_mode.compare_exchange_strong(expected, desired)); 
+	// update expected to current value if m_mode current value is not expected.
+
+
+	//DevConsoleMode expected = mode;
+	//if (!m_mode.compare_exchange_strong(expected, DevConsoleMode::HIDDEN)) 
+	//{
+	//	m_mode.store(mode);
+	//}
+
+	//if (m_mode == mode)
+	//{
+	//	m_mode = DevConsoleMode::HIDDEN;
+	//}
+	//else
+	//{
+	//	m_mode = mode;
+	//}
 }
 
 void DevConsole::SaveLine(Rgba8 const& color, std::string const& lineText)
 {
+	std::lock_guard<std::shared_mutex> lock(m_linesMutex);
+
 	DevConsoleLine devConsoleLine;
 	devConsoleLine.m_color = color;
 	devConsoleLine.m_text = lineText;
@@ -516,6 +547,8 @@ CircularQueue::CircularQueue(int capacity)
 
 void CircularQueue::Resize(int capacity)
 {
+	std::lock_guard<std::mutex> lock(m_mutex);
+
 	m_start = 0;
 	m_end = 0;
 	m_capacity = capacity;
@@ -525,7 +558,9 @@ void CircularQueue::Resize(int capacity)
 
 void CircularQueue::Enqueue(std::string const& value)
 {
-	if (isFull())
+	std::lock_guard<std::mutex> lock(m_mutex);
+
+	if (m_count == m_capacity) // isFull
 	{
 		m_data[m_end] = value;
 		m_end = (m_end + 1) % m_capacity;
@@ -541,7 +576,9 @@ void CircularQueue::Enqueue(std::string const& value)
 
 std::string CircularQueue::GetHistoryData(int historyIndex)
 {
-	if (IsEmpty())
+	std::lock_guard<std::mutex> lock(m_mutex);
+
+	if (m_count == 0)
 	{
 		return "";
 	}
@@ -555,15 +592,18 @@ std::string CircularQueue::GetHistoryData(int historyIndex)
 
 int CircularQueue::GetSize() const
 {
+	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_count;
 }
 
 bool CircularQueue::isFull() const
 {
+	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_count == m_capacity;
 }
 
 bool CircularQueue::IsEmpty() const
 {
+	std::lock_guard<std::mutex> lock(m_mutex);
 	return m_count == 0;
 }

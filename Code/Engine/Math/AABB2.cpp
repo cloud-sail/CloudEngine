@@ -25,6 +25,11 @@ AABB2::AABB2(Vec2 const& mins, Vec2 const& maxs)
 {
 }
 
+AABB2 AABB2::MakeFromCenter(Vec2 const& center, Vec2 const& halfDimensions)
+{
+	return AABB2(center - halfDimensions, center + halfDimensions);
+}
+
 bool AABB2::IsPointInside(Vec2 const& point) const
 {
 	return (point.x > m_mins.x && point.x < m_maxs.x &&

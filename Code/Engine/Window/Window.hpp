@@ -15,6 +15,7 @@ struct WindowConfig
 	std::string		m_windowTitle = "Unnamed SD Engine Application";
 	bool			m_imGuiCaptureKeyBoardInput = true;
 	bool			m_imGuiCaptureMouseInput = true;
+	bool			m_isInitialFullscreen = false;
 };
 
 
