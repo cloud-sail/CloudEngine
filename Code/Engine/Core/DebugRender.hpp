@@ -31,6 +31,8 @@ struct DebugRenderConfig
 
 	float m_messageCellHeight = 20.f; // 800 / 40 lines
 	float m_messageAspectRatio = 0.7f;
+	float m_messageShadowOffsetRatio = 0.08f;
+	float m_messageMarginRatio = 0.2f;
 };
 
 // Setup

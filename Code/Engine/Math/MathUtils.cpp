@@ -14,7 +14,11 @@
 #include "Engine/Math/OBB2.hpp"
 #include "Engine/Math/OBB3.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Math/Plane2.hpp"
 #include "Engine/Math/Plane3.hpp"
+#include "Engine/Math/ConvexPoly2.hpp"
+#include "Engine/Math/ConvexHull2.hpp"
+#include "Engine/Math/SignedDistanceUtils.hpp"
 #include <math.h>
 
 
@@ -520,6 +524,42 @@ bool IsPointInsideOBB3D(Vec3 const& point, OBB3 const& orientedBox)
 	Vec3 localPos = orientedBox.GetLocalPosForWorldPos(point);
 	AABB3 localOBB = AABB3(-orientedBox.m_halfDimensions, orientedBox.m_halfDimensions);
 	return localOBB.IsPointInside(localPos);
+}
+
+bool IsPointInsideConvexPoly2D(Vec2 const& point, ConvexPoly2 const& convexPoly)
+{
+	int numVertices = static_cast<int>(convexPoly.m_vertexPositionsCCW.size());
+
+	for (int vertexIndex = 0; vertexIndex < numVertices; ++vertexIndex)
+	{
+		Vec2 start = convexPoly.m_vertexPositionsCCW[vertexIndex];
+		Vec2 end = convexPoly.m_vertexPositionsCCW[(vertexIndex + 1) % numVertices];
+
+
+        Vec2 startToEnd = end - start;
+        Vec2 startToPoint = point - start;
+
+        if (CrossProduct2D(startToPoint, startToEnd) >= 0.f)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool IsPointInsideConvexHull2D(Vec2 const& point, ConvexHull2 const& convexHull)
+{
+    for (int planeIndex = 0; planeIndex < static_cast<int>(convexHull.m_boundingPlanes.size()); ++planeIndex)
+    {
+        Plane2 const& plane = convexHull.m_boundingPlanes[planeIndex];
+        if (!plane.IsPointBehind(point))
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool IsAABBOnOrInFrontOfPlane3D(AABB3 const& box, Plane3 const& plane)
@@ -1436,5 +1476,68 @@ int Sign(float value)
 	{
 		return 0;
 	}
+}
+
+float GetSignedDistanceToDisc2D(Vec2 const& refPos, Vec2 const& center, float radius)
+{
+    return SdfPrimitives::Disc2D(refPos - center, radius);
+}
+
+float GetSignedDistanceToAABB2D(Vec2 const& refPos, AABB2 const& box)
+{
+    return SdfPrimitives::Box2D(refPos - box.GetCenter(), box.GetDimensions() * 0.5f);
+}
+
+float GetSignedDistanceToOBB2D(Vec2 const& refPos, OBB2 const& box)
+{
+    return SdfPrimitives::OrientedBox2D(refPos, box);
+}
+
+float GetSignedDistanceToCapsule2D(Vec2 const& refPos, Vec2 const& boneStart, Vec2 const& boneEnd, float radius)
+{
+    return SdfPrimitives::Capsule2D(refPos, boneStart, boneEnd, radius);
+}
+
+float GetSignedDistanceToLineSegment2D(Vec2 const& refPos, Vec2 const& start, Vec2 const& end)
+{
+    return SdfPrimitives::Segment2D(refPos, start, end);
+}
+
+float GetSignedDistanceToPlane2D(Vec2 const& refPos, Plane2 const& plane)
+{
+    return plane.GetSignedDistanceToPoint(refPos);
+}
+
+float GetSignedDistanceToSphere3D(Vec3 const& refPos, Vec3 const& center, float radius)
+{
+    return SdfPrimitives::Sphere3D(refPos - center, radius);
+}
+
+float GetSignedDistanceToAABB3D(Vec3 const& refPos, AABB3 const& box)
+{
+    return SdfPrimitives::Box3D(refPos - box.GetCenter(), box.GetDimensions() * 0.5f);
+}
+
+float GetSignedDistanceToOBB3D(Vec3 const& refPos, OBB3 const& box)
+{
+    Vec3 localQ = box.GetLocalPosForWorldPos(refPos);
+
+    return SdfPrimitives::Box3D(localQ, box.m_halfDimensions);
+}
+
+float GetSignedDistanceToLineSegment3D(Vec3 const& refPos, Vec3 const& start, Vec3 const& end)
+{
+    return SdfPrimitives::Segment3D(refPos, start, end);
+}
+
+float GetSignedDistanceToCapsule3D(Vec3 const& refPos, Vec3 const& boneStart, Vec3 const& boneEnd, float radius)
+{
+	return SdfPrimitives::Segment3D(refPos, boneStart, boneEnd) - radius;
+
+}
+
+float GetSignedDistanceToPlane3D(Vec3 const& refPos, Plane3 const& plane)
+{
+    return plane.GetSignedDistanceToPoint(refPos);
 }
 

@@ -19,8 +19,6 @@ class Texture;
 // only be seen in this cpp,  or use static for variable
 namespace 
 {
-	constexpr float	MESSAGE_MARGIN_RATIO = 0.2f;
-
 	DebugRenderConfig s_config;
 
 	std::atomic<bool> s_isVisible{ true };
@@ -284,7 +282,7 @@ void DebugRenderScreen(Camera const& camera)
 	int messageSlot = 1;
 	int screenMessageNum = static_cast<int>(s_screenMessage.size());
 	AABB2 cameraBounds = AABB2(camera.GetOrthographicBottomLeft(), camera.GetOrthographicTopRight());
-	float const messageMargin = s_config.m_messageCellHeight * MESSAGE_MARGIN_RATIO;
+	float const messageMargin = s_config.m_messageCellHeight * s_config.m_messageMarginRatio;
 	// First Display infinite duration messages
 	for (int index = 0; index < screenMessageNum; ++index)
 	{
@@ -503,6 +501,7 @@ void DebugAddMessage(std::string const& text, float duration, Rgba8 const& start
 	std::lock_guard<std::mutex> lock(s_screenMessageMutex);
 	s_screenMessage.emplace_back(startColor, endColor, duration, DebugRenderMode::ALWAYS);
 	DebugRenderObject& obj = s_screenMessage.back();
+	s_font->AddVertsForText2D(obj.m_vertexs, Vec2(s_config.m_messageCellHeight * s_config.m_messageShadowOffsetRatio, s_config.m_messageCellHeight * -s_config.m_messageShadowOffsetRatio), s_config.m_messageCellHeight, text, Rgba8(0, 0, 0), s_config.m_messageAspectRatio);
 	s_font->AddVertsForText2D(obj.m_vertexs, Vec2::ZERO, s_config.m_messageCellHeight, text, Rgba8::OPAQUE_WHITE, s_config.m_messageAspectRatio);
 	obj.m_texture = &s_font->GetTexture();
 	//obj.m_isScreenText = true;

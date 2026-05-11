@@ -223,7 +223,7 @@ STATIC bool DevConsole::Command_Test(EventArgs& args)
 	float time = args.GetValue("elapsedTime", -100.f);
 	g_theDevConsole->AddText(INFO_MINOR, Stringf("Test command received! time elapsed: %0.2f", time));
 	//args.DebugPrintContents();
-	return false; // Does not consume event; continue to call other subscribers’ callback functions
+	return false; // Does not consume event; continue to call other subscribers callback functions
 }
 
 void DevConsole::Render_OpenFull(AABB2 const& bounds, Renderer& renderer, BitmapFont& font, float fontAspectScale /*= 1.f*/) const
@@ -382,29 +382,60 @@ void DevConsole::Execute(std::string const& consoleCommandText, bool echoCommand
 	for (size_t commandIndex = 0; commandIndex < commandLines.size(); ++commandIndex)
 	{
 		std::string const& commandLine = commandLines[commandIndex];
-		Strings parts = SplitStringOnDelimiterAndDiscardEmpty(commandLine, ' ');
+
+		// Tokenize with quotation mark support: anything inside quotes is literal,
+		// quotes themselves are discarded.
+		Strings parts;
+		std::string currentToken;
+		bool inQuotes = false;
+
+		for (size_t charIndex = 0; charIndex < commandLine.size(); ++charIndex)
+		{
+			char c = commandLine[charIndex];
+
+			if (c == '"')
+			{
+				inQuotes = !inQuotes;
+			}
+			else if (c == ' ' && !inQuotes)
+			{
+				if (!currentToken.empty())
+				{
+					parts.push_back(currentToken);
+					currentToken.clear();
+				}
+			}
+			else
+			{
+				currentToken += c;
+			}
+		}
+		if (!currentToken.empty())
+		{
+			parts.push_back(currentToken);
+		}
+
 		if (parts.empty()) continue;
 
 		DevConsoleCommand cmd;
 		cmd.name = parts[0];
 
-
-		// ToFix tier 1 solution: if '=' in value, if key = value, if key = " abc " 
-		for (size_t i = 1; i < parts.size(); ++i) 
+		for (size_t i = 1; i < parts.size(); ++i)
 		{
 			std::string const& arg = parts[i];
 			size_t eqPos = arg.find('=');
-			if (eqPos != std::string::npos) {
+			if (eqPos != std::string::npos)
+			{
 				std::string key = arg.substr(0, eqPos);
 				std::string value = arg.substr(eqPos + 1);
 				cmd.kwargs[key] = value;
 			}
-			else {
+			else
+			{
 				cmd.args.push_back(arg);
 			}
 		}
-		// cmd.args is positional/ordered arguments, not used now
-		// cmd.kwargs is keyword arguments
+
 		if (echoCommand)
 		{
 			Rgba8 color = INFO_ENTERED_TEXT;
@@ -415,6 +446,47 @@ void DevConsole::Execute(std::string const& consoleCommandText, bool echoCommand
 		EventArgs args(cmd.kwargs);
 		g_theEventSystem->FireEvent(cmd.name, args);
 	}
+}
+
+void DevConsole::ExecuteXmlCommandScriptNode(XmlElement const& commandScriptXmlElement)
+{
+	for (XmlElement const* childElement = commandScriptXmlElement.FirstChildElement();
+		childElement != nullptr;
+		childElement = childElement->NextSiblingElement())
+	{
+		std::string commandString = childElement->Name();
+
+		for (XmlAttribute const* attribute = childElement->FirstAttribute();
+			attribute != nullptr;
+			attribute = attribute->Next())
+		{
+			std::string key = attribute->Name();
+			std::string value = attribute->Value();
+			commandString += " " + key + "=\"" + value + "\"";
+		}
+
+		Execute(commandString);
+	}
+}
+
+void DevConsole::ExecuteXmlCommandScriptFile(std::string const& commandScriptXmlFilePathName)
+{
+	XmlDocument doc;
+	XmlResult result = doc.LoadFile(commandScriptXmlFilePathName.c_str());
+	if (result != tinyxml2::XML_SUCCESS)
+	{
+		AddText(ERROR, Stringf("Failed to load command script file: %s", commandScriptXmlFilePathName.c_str()));
+		return;
+	}
+
+	XmlElement* rootElement = doc.RootElement();
+	if (rootElement == nullptr)
+	{
+		AddText(ERROR, Stringf("No root element in command script file: %s", commandScriptXmlFilePathName.c_str()));
+		return;
+	}
+
+	ExecuteXmlCommandScriptNode(*rootElement);
 }
 
 void DevConsole::AddText(Rgba8 const& color, std::string const& text)

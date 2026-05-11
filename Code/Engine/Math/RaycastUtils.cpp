@@ -4,9 +4,11 @@
 #include "Engine/Math/AABB2.hpp"
 #include "Engine/Math/AABB3.hpp"
 #include "Engine/Math/OBB3.hpp"
+#include "Engine/Math/Plane2.hpp"
 #include "Engine/Math/Plane3.hpp"
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Math/FloatRange.hpp"
+#include "Engine/Math/ConvexHull2.hpp"
 #include <cmath>
 
 
@@ -222,6 +224,118 @@ RaycastResult2D RaycastVsAABB2D(Vec2 const& startPos, Vec2 const& fwdNormal, flo
 		raycastResult.m_impactPos = startPos + fwdNormal * raycastResult.m_impactDist;
 		return raycastResult;
 	}
+}
+
+RaycastResult2D RaycastVsPlane2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, Plane2 const& plane)
+{
+	RaycastResult2D raycastResult;
+	raycastResult.m_ray.m_startPos = startPos;
+	raycastResult.m_ray.m_fwdNormal = fwdNormal;
+	raycastResult.m_ray.m_maxLength = maxDist;
+
+	Vec2 endPos = startPos + fwdNormal * maxDist;
+
+	if (plane.GetSignedDistanceToPoint(startPos) * plane.GetSignedDistanceToPoint(endPos) >= 0.f)
+	{
+		return raycastResult;
+	}
+
+	raycastResult.m_didImpact = true;
+	raycastResult.m_impactDist = -plane.GetSignedDistanceToPoint(startPos) / DotProduct2D(fwdNormal, plane.m_normal);
+	raycastResult.m_impactPos = startPos + fwdNormal * raycastResult.m_impactDist;
+	raycastResult.m_impactNormal = plane.IsPointInFrontOf(startPos) ? plane.m_normal : -plane.m_normal;
+
+	return raycastResult;
+
+}
+
+RaycastResult2D RaycastVsConvexHull2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, ConvexHull2 const& convexHull)
+{
+	RaycastResult2D raycastResult;
+	raycastResult.m_ray.m_startPos = startPos;
+	raycastResult.m_ray.m_fwdNormal = fwdNormal;
+	raycastResult.m_ray.m_maxLength = maxDist;
+
+	// Should test inside first?
+
+	float maxDistForEnter = -FLT_MAX;
+	float minDistForExit = FLT_MAX;
+
+	Vec2 impactNormal;
+
+	for (Plane2 const& plane : convexHull.m_boundingPlanes)
+	{
+		float dot = DotProduct2D(fwdNormal, plane.m_normal);
+
+		float impactDist = -plane.GetSignedDistanceToPoint(startPos) / dot;
+
+
+		// Handle parallel case (dot == 0)
+		if (dot == 0.f)
+		{
+			// Ray is parallel to plane, check if ray is outside
+			if (plane.GetSignedDistanceToPoint(startPos) > 0.f)
+			{
+				// Ray is outside and parallel, no hit
+				return raycastResult;
+			}
+			// Ray is inside or on plane, continue checking other planes
+			continue;
+		}
+
+
+		if (dot < 0.f) // Enter
+		{
+			if (impactDist > maxDistForEnter)
+			{
+				maxDistForEnter = impactDist;
+				impactNormal = plane.m_normal;
+			}
+		}
+		else // Exit (dot > 0)
+		{
+			if (impactDist < minDistForExit)
+			{
+				minDistForExit = impactDist;
+			}
+		}
+	}
+
+	// No Hit: exit before enter
+	if (minDistForExit <= maxDistForEnter)
+	{
+		return raycastResult;
+	}
+
+	// Not Hit: convex hull is completely behind the ray
+	if (minDistForExit < 0.f)
+	{
+		return raycastResult;
+	}
+
+	// Inside the convex hull
+	if (maxDistForEnter < 0.f)
+	{
+		raycastResult.m_didImpact = true;
+		raycastResult.m_impactDist = 0.f;
+		raycastResult.m_impactPos = startPos;
+		raycastResult.m_impactNormal = -fwdNormal;
+		return raycastResult;
+	}
+
+	// Check if impact is within maxDist
+	if (maxDistForEnter > maxDist)
+	{
+		return raycastResult;
+	}
+
+	// Outside: valid hit within range
+	raycastResult.m_didImpact = true;
+	raycastResult.m_impactDist = maxDistForEnter;
+	raycastResult.m_impactPos = startPos + fwdNormal * maxDistForEnter;
+	raycastResult.m_impactNormal = impactNormal;
+
+	return raycastResult;
 }
 
 RaycastResult3D RaycastVsAABB3D(Vec3 rayStart, Vec3 rayForwardNormal, float rayLength, AABB3 box)

@@ -99,6 +99,12 @@ public:
 	// with equals ('='). Echoes the command to the dev console as well as any command output.
 	void Execute(std::string const& consoleCommandText, bool echoCommand = true);
 
+	// Executes each child element under the given XML node as a separate console command.
+	void ExecuteXmlCommandScriptNode(XmlElement const& commandScriptXmlElement);
+
+	// Loads an XML file and executes its root element using ExecuteXmlCommandScriptNode.
+	void ExecuteXmlCommandScriptFile(std::string const& commandScriptXmlFilePathName);
+
 	// Adds a line of text to the current list of lines being shown. Individual lines are delimited
 	// with the newline ('\n') character.
 	void AddText(Rgba8 const& color, std::string const& text);

@@ -8,7 +8,9 @@ struct LineSegment2;
 struct AABB2;
 struct AABB3;
 struct OBB3;
+struct Plane2;
 struct Plane3;
+struct ConvexHull2;
 
 //-----------------------------------------------------------------------------------------------
 struct Ray2
@@ -42,7 +44,8 @@ RaycastResult2D RaycastVsDisc2D(Vec2 const& startPos, Vec2 const& fwdNormal, flo
 RaycastResult2D RaycastVsLineSegment2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, LineSegment2 const& lineSegment); 
 RaycastResult2D RaycastVsLineSegment2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, Vec2 const& lineSegStart, Vec2 const& lineSegEnd);
 RaycastResult2D RaycastVsAABB2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, AABB2 const& box);
-
+RaycastResult2D RaycastVsPlane2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, Plane2 const& plane); // Not Tested
+RaycastResult2D RaycastVsConvexHull2D(Vec2 const& startPos, Vec2 const& fwdNormal, float maxDist, ConvexHull2 const& convexHull);
 
 //-----------------------------------------------------------------------------------------------
 struct RaycastResult3D

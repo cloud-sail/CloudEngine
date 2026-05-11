@@ -15,6 +15,7 @@
 #include "Engine/Math/Triangle2.hpp"
 #include "Engine/Math/Mat44.hpp"
 #include "Engine/Math/IntVec2.hpp"
+#include "Engine/Math/ConvexPoly2.hpp"
 
 
 void TransformVertexArrayXY3D(int numVerts, Vertex_PCU* verts, float uniformScaleXY, float rotationDegreesAboutZ, Vec2 const& translationXY)
@@ -344,6 +345,40 @@ void AddVertsForQuad2D(std::vector<Vertex_PCU>& verts, Vec2 const& bottomLeft, V
 	verts.emplace_back(Vertex_PCU(Vec3(bottomLeft.x, bottomLeft.y, 0.f), color, uv0));
 	verts.emplace_back(Vertex_PCU(Vec3(topRight.x, topRight.y, 0.f), color, uv2));
 	verts.emplace_back(Vertex_PCU(Vec3(topLeft.x, topLeft.y, 0.f), color, uv3));
+}
+
+void AddVertsForConvexPoly2D(std::vector<Vertex_PCU>& verts, ConvexPoly2 const& convexPoly, Rgba8 const& color)
+{
+	int const vertexNum = (int)convexPoly.m_vertexPositionsCCW.size();
+
+	if (vertexNum < 3)
+	{
+		return;
+	}
+
+
+	for (int vertexIndex = 2; vertexIndex < vertexNum; ++vertexIndex)
+	{
+		AddVertsForTriangle2D(verts, convexPoly.m_vertexPositionsCCW[0], convexPoly.m_vertexPositionsCCW[vertexIndex - 1], convexPoly.m_vertexPositionsCCW[vertexIndex], color);
+	}
+
+}
+
+void AddVertsForConvexPolyEdge2D(std::vector<Vertex_PCU>& verts, ConvexPoly2 const& convexPoly, Rgba8 const& color, float thickness)
+{
+	int const vertexNum = (int)convexPoly.m_vertexPositionsCCW.size();
+
+	if (vertexNum < 3)
+	{
+		return;
+	}
+
+	for (int vertexIndex = 0; vertexIndex < vertexNum - 1; ++vertexIndex)
+	{
+		AddVertsForLineSegment2D(verts, convexPoly.m_vertexPositionsCCW[vertexIndex], convexPoly.m_vertexPositionsCCW[vertexIndex + 1], thickness, color);
+	}
+
+	AddVertsForLineSegment2D(verts, convexPoly.m_vertexPositionsCCW[vertexNum - 1], convexPoly.m_vertexPositionsCCW[0], thickness, color);
 }
 
 void AddVertsForQuad3D(std::vector<Vertex_PCU>& verts, Vec3 const& bottomLeft, Vec3 const& bottomRight, Vec3 const& topRight, Vec3 const& topLeft, Rgba8 const& color /*= Rgba8::OPAQUE_WHITE*/, AABB2 const& UVs /*= AABB2::ZERO_TO_ONE*/)

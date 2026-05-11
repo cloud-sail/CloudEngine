@@ -2,6 +2,7 @@
 #include "Game/EngineBuildPreferences.hpp"
 
 #include "Engine/Math/Mat44.hpp"
+#include "Engine/Math/Vec2.hpp"
 #include "Engine/Math/Vec3.hpp"
 #include "Engine/Math/Vec4.hpp"
 #include "Engine/Core/Rgba8.hpp"
@@ -469,6 +470,16 @@ struct SkyboxRenderResources
 
 	uint32_t cameraConstantsIndex = INVALID_INDEX_U32;
 	uint32_t modelConstantsIndex = INVALID_INDEX_U32;
+};
+
+struct CpuSdfGridResources
+{
+	Vec2     mins;                                        // 8 B — AABB min corner in world space
+	Vec2     maxs;                                        // 8 B — AABB max corner in world space
+	uint32_t cols                 = 0;
+	uint32_t rows                 = 0;
+	uint32_t gridColorsIndex      = INVALID_INDEX_U32;    // StructuredBuffer<uint> of packed RGBA8
+	uint32_t cameraConstantsIndex = INVALID_INDEX_U32;
 };
 
 struct PBRRenderResources

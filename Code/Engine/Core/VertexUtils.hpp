@@ -23,6 +23,7 @@ struct Vertex_PCUTBN;
 struct Rgba8;
 struct Mat44;
 struct IntVec2;
+struct ConvexPoly2;
 
 //-----------------------------------------------------------------------------------------------
 void TransformVertexArrayXY3D(int numVerts, Vertex_PCU* verts, float uniformScaleXY,float rotationDegreesAboutZ, Vec2 const& translationXY);
@@ -53,6 +54,9 @@ void AddVertsForQuad2D(std::vector<Vertex_PCU>& verts,
 void AddVertsForQuad2D(std::vector<Vertex_PCU>& verts,
 	Vec2 const& bottomLeft, Vec2 const& bottomRight, Vec2 const& topRight, Vec2 const& topLeft,
 	Rgba8 const& color, Vec2 uv0, Vec2 uv1, Vec2 uv2, Vec2 uv3);
+void AddVertsForConvexPoly2D(std::vector<Vertex_PCU>& verts, ConvexPoly2 const& convexPoly, Rgba8 const& color);
+void AddVertsForConvexPolyEdge2D(std::vector<Vertex_PCU>& verts, ConvexPoly2 const& convexPoly, Rgba8 const& color, float thickness);
+
 
 //-----------------------------------------------------------------------------------------------
 void AddVertsForQuad3D(std::vector<Vertex_PCU>& verts, 

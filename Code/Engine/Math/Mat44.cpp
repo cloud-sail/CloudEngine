@@ -11,6 +11,8 @@
 //-----------------------------------------------------------------------------------------------
 const Mat44 Mat44::DIRECTX_C2R(Vec3(0.f, 0.f, 1.f), Vec3(-1.f, 0.f, 0.f), Vec3(0.f, 1.f, 0.f), Vec3());
 
+static constexpr float KINDA_SMALL_NUMBER = 1.e-4f;
+
 //-----------------------------------------------------------------------------------------------
 Mat44::Mat44()
 {
@@ -228,7 +230,7 @@ STATIC Mat44 const Mat44::MakeFromX(Vec3 const& xAxis)
 	// Try Best make Z.z more positive
 	Vec3 iBasis = xAxis.GetNormalized();
 
-	Vec3 upDirection = (fabsf(iBasis.z) < 1.f) ? Vec3::ZAXIS : Vec3::XAXIS;
+	Vec3 upDirection = (fabsf(iBasis.z) < (1.f - KINDA_SMALL_NUMBER)) ? Vec3::ZAXIS : Vec3::XAXIS;
 
 	Vec3 jBasis = CrossProduct3D(upDirection, iBasis).GetNormalized();
 	Vec3 kBasis = CrossProduct3D(iBasis, jBasis);
@@ -243,7 +245,7 @@ STATIC Mat44 const Mat44::MakeFromY(Vec3 const& yAxis)
 	// Try Best make X.z more positive
 	Vec3 jBasis = yAxis.GetNormalized();
 
-	Vec3 upDirection = (fabsf(jBasis.z) < 1.f) ? Vec3::ZAXIS : Vec3::XAXIS;
+	Vec3 upDirection = (fabsf(jBasis.z) < (1.f - KINDA_SMALL_NUMBER)) ? Vec3::ZAXIS : Vec3::XAXIS;
 
 	Vec3 kBasis = CrossProduct3D(upDirection, jBasis).GetNormalized();
 	Vec3 iBasis = CrossProduct3D(jBasis, kBasis);
@@ -256,7 +258,7 @@ STATIC Mat44 const Mat44::MakeFromZ(Vec3 const& zAxis)
 	// Try Best make Y.z more positive
 	Vec3 kBasis = zAxis.GetNormalized();
 
-	Vec3 upDirection = (fabsf(kBasis.z) < 1.f) ? Vec3::ZAXIS : Vec3::XAXIS;
+	Vec3 upDirection = (fabsf(kBasis.z) < (1.f - KINDA_SMALL_NUMBER)) ? Vec3::ZAXIS : Vec3::XAXIS;
 
 	Vec3 iBasis = CrossProduct3D(upDirection, kBasis).GetNormalized();
 	Vec3 jBasis = CrossProduct3D(kBasis, iBasis);

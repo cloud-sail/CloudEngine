@@ -17,9 +17,12 @@ struct Triangle2;
 struct OBB2;
 struct OBB3;
 struct Plane3;
+struct Plane2;
 struct Mat44;
 struct Frustum;
 struct Quat;
+struct ConvexPoly2;
+struct ConvexHull2;
 
 //-----------------------------------------------------------------------------------------------
 enum class BillboardType
@@ -116,6 +119,8 @@ bool IsPointInsideCylinderZ3D(Vec3 const& point, Vec2 const& centerXY, FloatRang
 bool IsPointInsideSphere3D(Vec3 const& point, Vec3 sphereCenter, float sphereRadius);
 bool IsPointInsideAABB3D(Vec3 const& point, AABB3 const& box);
 bool IsPointInsideOBB3D(Vec3 const& point, OBB3 const& orientedBox);
+bool IsPointInsideConvexPoly2D(Vec2 const& point, ConvexPoly2 const& convexPoly);
+bool IsPointInsideConvexHull2D(Vec2 const& point, ConvexHull2 const& convexHull);
 
 bool IsAABBOnOrInFrontOfPlane3D(AABB3 const& box, Plane3 const& plane);
 bool IsPointInsideFrustum(Vec3 const& point, Frustum const& frustum);
@@ -247,5 +252,18 @@ float BounceEndBezier5(float t);
 int Sign(float value);
 
 //-----------------------------------------------------------------------------------------------
+float GetSignedDistanceToDisc2D(Vec2 const& refPos, Vec2 const& center, float radius);
+float GetSignedDistanceToAABB2D(Vec2 const& refPos, AABB2 const& box);
+float GetSignedDistanceToOBB2D(Vec2 const& refPos, OBB2 const& box);
+float GetSignedDistanceToCapsule2D(Vec2 const& refPos, Vec2 const& boneStart, Vec2 const& boneEnd, float radius);
+float GetSignedDistanceToLineSegment2D(Vec2 const& refPos, Vec2 const& start, Vec2 const& end);
+float GetSignedDistanceToPlane2D(Vec2 const& refPos, Plane2 const& plane);
+
+float GetSignedDistanceToSphere3D(Vec3 const& refPos, Vec3 const& center, float radius);
+float GetSignedDistanceToAABB3D(Vec3 const& refPos, AABB3 const& box);
+float GetSignedDistanceToOBB3D(Vec3 const& refPos, OBB3 const& box);
+float GetSignedDistanceToLineSegment3D(Vec3 const& refPos, Vec3 const& start, Vec3 const& end);
+float GetSignedDistanceToCapsule3D(Vec3 const& refPos, Vec3 const& boneStart, Vec3 const& boneEnd, float radius);
+float GetSignedDistanceToPlane3D(Vec3 const& refPos, Plane3 const& plane);
 
 
